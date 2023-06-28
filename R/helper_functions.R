@@ -1,7 +1,5 @@
 # EM-MIL helper functions
 
-library(glmnet)
-
 #' A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.
 #'
 #' @param z The vector of inherited parent labels for each cell. 
@@ -58,17 +56,17 @@ update_y <- function(predictions, z, rho, zeta) {
 
 #' Compute the log-likelihood of the EM-MIL algorithm
 #'
-#' @param z The inherited (parent) labels for each cell
-#' @param predictions The (logit) model predictions from the maximization step
-#' @param num_cells_disease The number of cells in the (training) dataset that come 
+#' @param z An integer vector containing the inherited (parent) labels for each cell
+#' @param predictions A numeric vector containing the (logit) model predictions from the maximization step
+#' @param num_cells_disease A scalar indicating the number of cells in the (training) dataset that come 
 #' from samples with the disease. 
-#' @param num_cells The total number of cells in the (training) dataset.
+#' @param num_cells A scalar indicating the total number of cells in the (training) dataset.
 #'
 #' @return A numeric scalar indicating the log-likelihood for the current iteration.
 #'
-loglik <- function(z, predictions, num_cells_disease, num_cells){
-  intercept_adjustment = ll = 0
-  ll = 
+loglik <- function(z, predictions, num_cells_disease, num_cells) {
+  ll <- 0
+  ll <- 
     ll + 
     sum(
       log(
@@ -76,7 +74,7 @@ loglik <- function(z, predictions, num_cells_disease, num_cells){
           rho * num_cells_disease / (num_cells - num_cells_disease * (1 - rho))
       )
     )
-  ll = 
+  ll <-
     ll + 
     sum(z == 0) * log(1 - rho * num_cells_disease / (num_cells - num_cells_disease * (1 - rho)))
   ll = ll - sum(log(exp(predictions) + 1))

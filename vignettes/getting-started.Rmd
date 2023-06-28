@@ -1,0 +1,346 @@
+---
+title: "Getting started with EMMIL"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{getting-started}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(emmil)
+library(glmnet)
+library(ggplot2)
+```
+
+```{r}
+#parameters 
+rho <- 0.5
+zeta <- 0.5
+lambda = 0.1
+num_iterations <- 100
+```
+
+
+# Simulate data
+
+
+```{r}
+simulated_data <- 
+  emmil_simulate_data(
+    num_cells = 100, 
+    num_features = 10, 
+    rho = rho, 
+    zeta = zeta, 
+    shift = 4
+  )
+
+X <- simulated_data$X
+z <- simulated_data$z
+true_y <- simulated_data$true_y
+```
+
+# Calculate case-control intercept adjustment
+
+
+```{r}
+# Here we address our sampling bias.
+# This should be pretty close to 0, because we don't have any sampling bias!
+# Including for completeness.
+# Question from Tim: Can we estimate rho and zeta (but especially zeta) from the training data? I guess that kind of defeats the point of this. 
+case_control_intercept_adjustment <- 
+  emmil_calculate_case_control_adjustment(
+    z = z, 
+    rho = rho, 
+    zeta = zeta
+  )
+
+print(round(case_control_intercept_adjustment, 4))
+```
+
+
+
+# Fit model
+
+## glmnet
+
+```{r}
+glmnet_result <- 
+  emmil_fit_glmnet(
+    X = X, 
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    lambda = lambda, 
+    case_control_adjustment = case_control_intercept_adjustment, 
+    num_iterations = num_iterations
+  )
+
+lls <- glmnet_result$lls
+y <- glmnet_result$y
+glmnet_model <- glmnet_result$model
+y_list <- glmnet_result$y_list
+
+```
+
+```{r}
+# This should be increasing:
+lls |> 
+  emmil_plot_lls()
+
+# This should differentiate between the groups.
+glmnet_predictions <- 
+  glmnet_model |> 
+  predict(newx = X, s = lambda, type = "response") |> 
+  as.numeric()
+
+glmnet_performance_tibble <- 
+  tibble::tibble(
+  glmnet_predictions = glmnet_predictions, 
+  truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
+  z = z, 
+  sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
+) 
+
+glmnet_performance_tibble |> 
+  ggplot(aes(y = glmnet_predictions, x = truth, fill = sample_type)) + 
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_x_discrete(drop = FALSE) + 
+  scale_color_discrete(drop = FALSE) + 
+  theme_bw() + 
+  labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
+
+
+```
+
+## mlp
+
+```{r}
+mlp_result <- 
+  emmil_fit_mlp(
+    X = X, 
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    size = 5, 
+    maxit = 100, 
+    #case_control_adjustment = case_control_intercept_adjustment, 
+    num_iterations = num_iterations, 
+    decay = 0.4
+  )
+
+lls <- mlp_result$lls
+y <- mlp_result$y
+
+mlp_model <- mlp_result$model
+
+```
+
+
+```{r}
+# This should be increasing:
+lls |> 
+  emmil_plot_lls()
+
+# This should differentiate between the groups.
+# Let's only look at the instances where z == 1.
+# (We know the labels when z == 0.)
+mlp_predictions <- 
+  mlp_model |> 
+  predict(newdata = as.data.frame(X), type = "raw") |> 
+  as.numeric()
+
+
+mlp_performance_tibble <- 
+  tibble::tibble(
+    mlp_predictions = mlp_predictions, 
+    truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
+    z = z, 
+    sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
+  ) 
+
+
+glmnet_performance_tibble |> 
+  ggplot(aes(y = glmnet_predictions, x = truth, fill = sample_type)) + 
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_x_discrete(drop = FALSE) + 
+  scale_color_discrete(drop = FALSE) + 
+  scale_y_continuous(limits = c(0, 1)) + 
+  theme_bw() + 
+  labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
+
+mlp_performance_tibble |> 
+  ggplot(aes(y = mlp_predictions, x = truth, fill = sample_type)) + 
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_x_discrete(drop = FALSE) + 
+  scale_color_discrete(drop = FALSE) + 
+  scale_y_continuous(limits = c(0, 1)) + 
+  theme_bw() + 
+  labs(subtitle = "MLP performance", x = "true label", y = "predicted probability")
+```
+
+
+
+## pseudobinomial (pseudo-logistic regression)
+
+```{r}
+glm_result <- 
+  emmil_fit_glm(
+    X = X, 
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    #case_control_adjustment = 0, 
+    num_iterations = num_iterations
+  )
+
+lls <- glm_result$lls
+y <- glm_result$y
+y_list <- glm_result$y_list
+glm_model <- glm_result$model
+
+```
+
+
+
+```{r}
+lls |> 
+  emmil_plot_lls() + 
+  labs(subtitle = "logistic regression log-likelihood results")
+
+glm_predictions <- 
+  glm_model |> 
+  predict(newdata = as.data.frame(X), type = "response")
+
+
+glm_performance_tibble <- 
+  tibble::tibble(
+    glm_predictions = glm_predictions, 
+    truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
+    z = z, 
+    sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
+  ) 
+
+glm_performance_tibble |> 
+  ggplot(aes(y = glm_predictions, x = truth, fill = sample_type)) + 
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_x_discrete(drop = FALSE) + 
+  scale_color_discrete(drop = FALSE) + 
+  theme_bw() + 
+  labs(subtitle = "Logistic regression performance", x = "true label", y = "predicted probability")
+```
+
+## nnet via tidymodels
+
+```{r}
+nnet_spec <- 
+  parsnip::mlp(
+    engine = "nnet", 
+    mode = "regression", 
+    hidden_units = 5, 
+    penalty = 0.4, 
+    epochs = 10,
+  )
+
+tidymodel_result <- 
+  emmil_fit_tidymodels(
+    X = X, 
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    num_iterations = num_iterations, 
+    model_spec = nnet_spec
+  )
+
+lls <- tidymodel_result$lls
+y <- tidymodel_result$y
+y_list <- tidymodel_result$y_list
+tidymodel_model <- tidymodel_result$model
+
+
+```
+
+
+```{r}
+lls |> 
+  emmil_plot_lls() + 
+  labs(subtitle = "tidymodels nnet log-likelihood results")
+
+tidymodel_predictions <- 
+  tidymodel_model |> 
+  predict(new_data = as.data.frame(X), type = "raw") |> 
+  pmin(1) |> 
+  pmax(0)
+
+
+tidymodel_performance_tibble <- 
+  tibble::tibble(
+    tidymodel_predictions = tidymodel_predictions, 
+    truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
+    z = z, 
+    sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
+  ) 
+
+tidymodel_performance_tibble |> 
+  ggplot(aes(y = tidymodel_predictions, x = truth, fill = sample_type)) + 
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_color_discrete(drop = FALSE) + 
+  theme_bw() + 
+  labs(subtitle = "Tidymodels nnet performance", x = "true label", y = "predicted probability")
+```
+
+
+
+
+# Compare models
+
+
+
+
+```{r}
+glmnet_performance_tibble |> 
+  dplyr::mutate(
+    glm_predictions = glm_performance_tibble$glm_predictions, 
+    mlp_predictions = mlp_performance_tibble$mlp_predictions, 
+    tidymodel_predictions = tidymodel_performance_tibble$tidymodel_predictions
+  ) |> 
+  tidyr::pivot_longer(
+    cols = ends_with("_predictions"), 
+    names_to = "model", 
+    values_to = "prediction"
+  ) |> 
+  dplyr::mutate(
+    model = 
+      stringr::str_remove(model, "_predictions") |> 
+      factor(levels = c("glmnet", "glm", "mlp", "tidymodel")) |> 
+      forcats::fct_recode(`tidymodel mlp` = "tidymodel")
+  ) |> 
+  ggplot(aes(x = truth, y = prediction, fill = sample_type)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_color_discrete(drop = FALSE) + 
+  facet_grid(cols = vars(model)) + 
+  theme_bw() 
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
