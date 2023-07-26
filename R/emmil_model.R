@@ -160,6 +160,7 @@ check_emmil_model_hyperparameters <- function(type, hyperparameters) {
 #' Make predictions for new data using an EMMIL model. 
 #'
 #' @param object TO DO 
+#' @param adjust TO DO 
 #' @param ... TO DO 
 #'
 #' @return TO DO 
@@ -170,17 +171,21 @@ check_emmil_model_hyperparameters <- function(type, hyperparameters) {
 #' NULL
 #' 
 predict.emmil_model <- 
-  function(object, ...) { 
+  function(object, adjust = TRUE, ...) { 
     base_predictions <- NextMethod(...)
-    z_placeholder <- rep(1, times = length(base_predictions))
-    updated_predictions <- 
-      update_y(
-        predictions = base_predictions, 
-        z = z_placeholder, 
-        rho = object$rho, 
-        zeta = object$zeta
-      )
-    return(updated_predictions)
+    if (adjust) { 
+      z_placeholder <- rep(1, times = length(base_predictions))
+      updated_predictions <- 
+        update_y(
+          predictions = base_predictions, 
+          z = z_placeholder, 
+          rho = object$rho, 
+          zeta = object$zeta
+        )
+      return(updated_predictions)
+    } else {
+      return(base_predictions)
+    }
   }
 
 #' Get the hyperparameters of an EMMIL object
