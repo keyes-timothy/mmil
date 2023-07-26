@@ -3,6 +3,7 @@
 #' A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.
 #'
 #' @param z The vector of inherited parent labels for each cell. 
+#' 
 #' @param rho The probability that a cell from a diseased sample is not 
 #' disease-associated (i.e. the probability that y = 0 when z = 1).
 #'
@@ -57,14 +58,20 @@ update_y <- function(predictions, z, rho, zeta) {
 #' Compute the log-likelihood of the EM-MIL algorithm
 #'
 #' @param z An integer vector containing the inherited (parent) labels for each cell
+#' 
 #' @param predictions A numeric vector containing the (logit) model predictions from the maximization step
+#' 
 #' @param num_cells_disease A scalar indicating the number of cells in the (training) dataset that come 
 #' from samples with the disease. 
+#' 
 #' @param num_cells A scalar indicating the total number of cells in the (training) dataset.
+#' 
+#' @param rho The probability that a cell from a diseased sample is not 
+#' disease-associated (i.e. the probability that y = 0 when z = 1).
 #'
 #' @return A numeric scalar indicating the log-likelihood for the current iteration.
 #'
-loglik <- function(z, predictions, num_cells_disease, num_cells) {
+loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
   ll <- 0
   ll <- 
     ll + 

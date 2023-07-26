@@ -4,12 +4,15 @@
 \alias{loglik}
 \title{Compute the log-likelihood of the EM-MIL algorithm}
 \usage{
-loglik(z, predictions, num_cells_disease, num_cells)
+loglik(z, predictions, rho, num_cells_disease, num_cells)
 }
 \arguments{
 \item{z}{An integer vector containing the inherited (parent) labels for each cell}
 
 \item{predictions}{A numeric vector containing the (logit) model predictions from the maximization step}
+
+\item{rho}{The probability that a cell from a diseased sample is not 
+disease-associated (i.e. the probability that y = 0 when z = 1).}
 
 \item{num_cells_disease}{A scalar indicating the number of cells in the (training) dataset that come 
 from samples with the disease.}

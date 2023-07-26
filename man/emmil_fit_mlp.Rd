@@ -11,6 +11,8 @@ emmil_fit_mlp(
   zeta,
   case_control_adjustment = 0,
   num_iterations = 20L,
+  num_neurons,
+  decay,
   ...
 )
 }
@@ -26,6 +28,10 @@ emmil_fit_mlp(
 \item{case_control_adjustment}{TO DO}
 
 \item{num_iterations}{TO DO}
+
+\item{num_neurons}{TO DO}
+
+\item{decay}{TO DO}
 
 \item{...}{TO DO}
 }

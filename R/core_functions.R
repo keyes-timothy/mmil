@@ -95,6 +95,8 @@ emmil_initialize_y <- function(z, rho){
 #' inherited patient label will be 1. In other words, something like the probabilty 
 #' that a random person from your population-of-interest will have the condition-of-interest
 #' (TODO: ASK ERIN ABOUT THIS). 
+#' @param num_cells TO DO 
+#' @param num_cells_disease TO DO  
 #'
 #' @return A scalar value indicating the case control adjustment that must be 
 #' added to our logit to adjust the intercept of our model. 
@@ -104,16 +106,23 @@ emmil_initialize_y <- function(z, rho){
 #' @examples
 #' NULL
 #' 
-emmil_calculate_case_control_adjustment <- function(z, rho, zeta) { 
-  num_cells <- length(z)
-  num_cells_disease <- sum(z)
-  
-  case_control_intercept_adjustment <-
-    -log((1 - rho) * num_cells_disease / (num_cells - (1 - rho) * num_cells_disease)) + 
-    log((1 - rho) * zeta / (1 - (1 - rho) * zeta))
-  
-  return(case_control_intercept_adjustment)
-}
+emmil_calculate_case_control_adjustment <- 
+  function(z, num_cells, num_cells_disease, rho, zeta) {
+    if (!missing(z)) { 
+      num_cells <- length(z)
+      num_cells_disease <- sum(z)
+    } else { 
+      if (missing(num_cells) | missing(num_cells_disease)) { 
+        stop("If z is not provided, then num_cells and num_cells_disease are required.")
+      }
+    }
+    
+    case_control_intercept_adjustment <-
+      -log((1 - rho) * num_cells_disease / (num_cells - (1 - rho) * num_cells_disease)) + 
+      log((1 - rho) * zeta / (1 - (1 - rho) * zeta))
+    
+    return(case_control_intercept_adjustment)
+  }
 
 
 # fit models -------------------------------------------------------------------
@@ -127,6 +136,7 @@ emmil_calculate_case_control_adjustment <- function(z, rho, zeta) {
 #' @param lambda TODO
 #' @param case_control_adjustment TODO
 #' @param num_iterations TODO
+#' @param alpha TODO
 #'
 #' @return A list.
 #' 
@@ -137,7 +147,7 @@ emmil_calculate_case_control_adjustment <- function(z, rho, zeta) {
 #' @examples
 #' NULL
 #' 
-emmil_fit_glmnet <- function(X, z, rho, zeta, lambda, case_control_adjustment = 0, num_iterations = 20L) { 
+emmil_fit_glmnet <- function(X, z, rho, zeta, lambda, alpha = 1, case_control_adjustment = 0, num_iterations = 20L) { 
   
   # initialize model 
   y <- initialize_y(z, rho)
@@ -147,15 +157,22 @@ emmil_fit_glmnet <- function(X, z, rho, zeta, lambda, case_control_adjustment = 
   num_cells_disease <- sum(z)
       
   # iterate EM steps
-  for(i in 1:num_iterations){
+  for (i in 1:num_iterations) {
     # maximization step 
-    model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), family = "binomial")
+    model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
     probabilities <- predict(model, newx = X, s = lambda, type = "response") 
     predictions <- log(probabilities / (1 - probabilities)) # logit 
-    lls[i] = loglik(z, predictions, num_cells_disease, num_cells)
+    lls[i] <- 
+      loglik(
+        z = z, 
+        predictions = predictions, 
+        rho = rho, 
+        num_cells_disease = num_cells_disease, 
+        num_cells = num_cells
+      )
     
     # expectation step 
-    adjusted_predictions <- predictions + case_control_intercept_adjustment
+    adjusted_predictions <- predictions + case_control_adjustment
     y <- update_y(adjusted_predictions, z, rho, zeta)
     y_list[i] <- list(y)
   }
@@ -167,6 +184,17 @@ emmil_fit_glmnet <- function(X, z, rho, zeta, lambda, case_control_adjustment = 
       y_list = y_list, 
       lls = lls, 
       model = model
+    )
+  
+  result <- 
+    new_emmil_model(
+      model = model, 
+      rho = rho, 
+      zeta = zeta, 
+      num_cells = num_cells, 
+      num_cells_disease = num_cells_disease, 
+      lls = lls, 
+      hyperparamters <- list(lambda = lambda, alpha = alpha)
     )
   
   return(result)
@@ -209,10 +237,17 @@ emmil_fit_glm <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iter
     model <- glm(y ~ ., data = X, family = "quasibinomial")
     probabilities <- predict(model, newdata = X, type = "response") 
     predictions <- log(probabilities / (1 - probabilities))  
-    lls[i] = loglik(z, predictions, num_cells_disease, num_cells)
+    lls[i] <- 
+      loglik(
+        z = z, 
+        predictions = predictions, 
+        rho = rho, 
+        num_cells_disease = num_cells_disease, 
+        num_cells = num_cells
+      )
     
     # expectation step 
-    adjusted_predictions <- predictions + case_control_intercept_adjustment
+    adjusted_predictions <- predictions + case_control_adjustment
     y <- update_y(adjusted_predictions, z, rho, zeta)
     y_list[i] <- list(y)
     X$y <- y
@@ -227,6 +262,17 @@ emmil_fit_glm <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iter
       model = model
     )
   
+  result <- 
+    new_emmil_model(
+      model = model, 
+      rho = rho, 
+      zeta = zeta, 
+      num_cells = num_cells, 
+      num_cells_disease = num_cells_disease, 
+      lls = lls, 
+      hyperparamters <- list()
+    )
+  
   return(result)
 }
 
@@ -239,9 +285,12 @@ emmil_fit_glm <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iter
 #' @param zeta TO DO 
 #' @param case_control_adjustment TO DO 
 #' @param num_iterations TO DO 
+#' @param num_neurons TO DO 
+#' @param decay TO DO 
 #' @param ... TO DO 
 #'
 #' @return TO DO 
+#' 
 #' @export
 #' 
 #' @importFrom nnet nnet
@@ -250,39 +299,70 @@ emmil_fit_glm <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iter
 #'
 #' @examples
 #' NULL
-emmil_fit_mlp <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iterations = 20L, ...) { 
-  # initialize model 
-  y <- initialize_y(z, rho)
-  lls <- rep(0, num_iterations)
-  y_list <- rep(list(y), num_iterations)
-  num_cells <- length(z)
-  num_cells_disease <- sum(z)
-  
-  # iterate EM steps
-  for(i in 1:num_iterations){
-    # maximization step 
-    model <- nnet::nnet(x = X, y = y, entropy = TRUE, trace = FALSE, ...)
-    probabilities <- predict(model, newdata = X, type = "raw") # probabilities
-    # convert probabilities to logit
-    predictions <- log(probabilities / (1 - probabilities))
-    lls[i] = loglik(z, predictions, num_cells_disease, num_cells)
-
-    # expectation step 
-    adjusted_predictions <- predictions + case_control_intercept_adjustment
-    y <- update_y(adjusted_predictions, z, rho, zeta)
-    y_list[i] <- list(y)
+emmil_fit_mlp <- 
+  function(
+    X, 
+    z, 
+    rho, 
+    zeta, 
+    case_control_adjustment = 0, 
+    num_iterations = 20L, 
+    num_neurons, 
+    decay, 
+    ...
+  ) { 
+    # initialize model 
+    y <- initialize_y(z, rho)
+    lls <- rep(0, num_iterations)
+    y_list <- rep(list(y), num_iterations)
+    num_cells <- length(z)
+    num_cells_disease <- sum(z)
     
+    # iterate EM steps
+    for(i in 1:num_iterations){
+      # maximization step 
+      # model <- nnet::nnet(x = X, y = y, entropy = TRUE, trace = FALSE, ...)
+      model <- 
+        nnet::nnet(x = X, y = y, size = num_neurons, decay = decay, trace = FALSE, ...)
+      probabilities <- predict(model, newdata = X, type = "raw") # probabilities
+      # convert probabilities to logit
+      predictions <- log(probabilities / (1 - probabilities))
+      lls[i] <-
+        loglik(
+          z = z, 
+          predictions = predictions, 
+          rho = rho, 
+          num_cells_disease = num_cells_disease, 
+          num_cells = num_cells
+        )
+      
+      # expectation step 
+      adjusted_predictions <- predictions + case_control_adjustment
+      y <- update_y(adjusted_predictions, z, rho, zeta)
+      y_list[i] <- list(y)
+      
+    }
+    
+    # return result
+    result <- 
+      list(
+        y = y, 
+        lls = lls, 
+        model = model,
+        y_list = y_list
+      )
+    
+    result <- 
+      new_emmil_model(
+        model = model, 
+        rho = rho, 
+        zeta = zeta, 
+        num_cells = num_cells, 
+        num_cells_disease = num_cells_disease, 
+        lls = lls, 
+        hyperparamters <- list(num_neurons = num_neurons, decay = decay)
+      )
   }
-  
-  # return result
-  result <- 
-    list(
-      y = y, 
-      lls = lls, 
-      model = model,
-      y_list = y_list
-    )
-}
 
 
 
@@ -323,10 +403,17 @@ emmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, n
       pmin(1 - 1e-5)
     predictions <- log(probabilities / (1 - probabilities))
     
-    lls[i] = loglik(z, predictions, num_cells_disease, num_cells)
+    lls[i] <- 
+      loglik(
+        z = z, 
+        predictions = predictions, 
+        rho = rho, 
+        num_cells_disease = num_cells_disease, 
+        num_cells = num_cells
+      )
     
     # expectation step 
-    adjusted_predictions <- predictions + case_control_intercept_adjustment
+    adjusted_predictions <- predictions + case_control_adjustment
     y <- update_y(adjusted_predictions, z, rho, zeta)
   }
   
@@ -337,6 +424,20 @@ emmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, n
       lls = lls, 
       model = model
     )
+  
+  
+  result <- 
+    new_emmil_model(
+      model = model, 
+      rho = rho, 
+      zeta = zeta, 
+      num_cells = num_cells, 
+      num_cells_disease = num_cells_disease, 
+      lls = lls, 
+      hyperparamters <- list()
+    )
+  
+  return(result)
 }
 
 
@@ -376,6 +477,9 @@ emmil_plot_lls <- function(lls, theme = ggplot2::theme_bw(), ...) {
   return(result)
 }
 
+emmil_predict <- function() {
+  return(NULL)
+}
 
 
 

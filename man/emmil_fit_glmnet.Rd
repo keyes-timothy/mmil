@@ -10,6 +10,7 @@ emmil_fit_glmnet(
   rho,
   zeta,
   lambda,
+  alpha = 1,
   case_control_adjustment = 0,
   num_iterations = 20L
 )
@@ -24,6 +25,8 @@ emmil_fit_glmnet(
 \item{zeta}{TODO}
 
 \item{lambda}{TODO}
+
+\item{alpha}{TODO}
 
 \item{case_control_adjustment}{TODO}
 

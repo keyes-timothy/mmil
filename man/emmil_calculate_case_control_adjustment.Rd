@@ -4,11 +4,21 @@
 \alias{emmil_calculate_case_control_adjustment}
 \title{Title}
 \usage{
-emmil_calculate_case_control_adjustment(z, rho, zeta)
+emmil_calculate_case_control_adjustment(
+  z,
+  num_cells,
+  num_cells_disease,
+  rho,
+  zeta
+)
 }
 \arguments{
 \item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
 cell was sampled from a patient with the disease and 0 otherwise.}
+
+\item{num_cells}{TO DO}
+
+\item{num_cells_disease}{TO DO}
 
 \item{rho}{A scalar value between 0 and 1 indicating the probability that 
 that a cell is NOT associated with the outcome-of-interest, given that the 

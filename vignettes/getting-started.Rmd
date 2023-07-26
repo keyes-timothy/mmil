@@ -1,5 +1,5 @@
 ---
-title: "Getting started with EMMIL"
+title: "Getting started with EM-MIL"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{getting-started}
@@ -10,13 +10,14 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>", 
+  fig.width = 7, 
+  warning = FALSE
 )
 ```
 
 ```{r setup}
 library(emmil)
-library(glmnet)
 library(ggplot2)
 ```
 
@@ -24,7 +25,7 @@ library(ggplot2)
 #parameters 
 rho <- 0.5
 zeta <- 0.5
-lambda = 0.1
+lambda <- 0.1
 num_iterations <- 100
 ```
 
@@ -51,10 +52,13 @@ true_y <- simulated_data$true_y
 
 
 ```{r}
+# From Erin: ------ 
 # Here we address our sampling bias.
 # This should be pretty close to 0, because we don't have any sampling bias!
 # Including for completeness.
-# Question from Tim: Can we estimate rho and zeta (but especially zeta) from the training data? I guess that kind of defeats the point of this. 
+# -------------------------
+# Question from Tim: Can we estimate rho and zeta (but especially zeta) from the training data? 
+# I guess that kind of defeats the point of using an adjustment in the first place. 
 case_control_intercept_adjustment <- 
   emmil_calculate_case_control_adjustment(
     z = z, 
@@ -83,19 +87,22 @@ glmnet_result <-
     num_iterations = num_iterations
   )
 
-lls <- glmnet_result$lls
-y <- glmnet_result$y
-glmnet_model <- glmnet_result$model
-y_list <- glmnet_result$y_list
+lls <- emmil_get_log_likelihoods(glmnet_result)
+y <- 
+  predict(
+    glmnet_result, 
+    newx = X, 
+    s = emmil_get_hyperparameters(glmnet_result)$lambda, 
+    type = "response"
+  )
+glmnet_model <- glmnet_result
 
 ```
 
 ```{r}
-# This should be increasing:
 lls |> 
   emmil_plot_lls()
 
-# This should differentiate between the groups.
 glmnet_predictions <- 
   glmnet_model |> 
   predict(newx = X, s = lambda, type = "response") |> 
@@ -106,7 +113,7 @@ glmnet_performance_tibble <-
   glmnet_predictions = glmnet_predictions, 
   truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
   z = z, 
-  sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
+  sample_type = dplyr::if_else(z == 0, "healthy sample", "disease sample")
 ) 
 
 glmnet_performance_tibble |> 
@@ -116,11 +123,11 @@ glmnet_performance_tibble |>
   scale_color_discrete(drop = FALSE) + 
   theme_bw() + 
   labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
-
-
 ```
 
 ## mlp
+
+What if instead of using a glmnet model, we used a multilayer perceptron? 
 
 ```{r}
 mlp_result <- 
@@ -129,17 +136,20 @@ mlp_result <-
     z = z, 
     rho = rho, 
     zeta = zeta, 
-    size = 5, 
-    maxit = 100, 
-    #case_control_adjustment = case_control_intercept_adjustment, 
     num_iterations = num_iterations, 
-    decay = 0.4
+    num_neurons = 5, 
+    decay = 0.4, 
+    maxit = 100
   )
 
-lls <- mlp_result$lls
-y <- mlp_result$y
+lls <- mlp_result |> 
+  emmil_get_log_likelihoods()
 
-mlp_model <- mlp_result$model
+y <- 
+  mlp_result |> 
+  predict(newdata = X, type = "raw")
+
+mlp_model <- mlp_result
 
 ```
 
@@ -157,7 +167,6 @@ mlp_predictions <-
   predict(newdata = as.data.frame(X), type = "raw") |> 
   as.numeric()
 
-
 mlp_performance_tibble <- 
   tibble::tibble(
     mlp_predictions = mlp_predictions, 
@@ -166,15 +175,6 @@ mlp_performance_tibble <-
     sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
   ) 
 
-
-glmnet_performance_tibble |> 
-  ggplot(aes(y = glmnet_predictions, x = truth, fill = sample_type)) + 
-  geom_boxplot(position = position_dodge(preserve = "single")) + 
-  scale_x_discrete(drop = FALSE) + 
-  scale_color_discrete(drop = FALSE) + 
-  scale_y_continuous(limits = c(0, 1)) + 
-  theme_bw() + 
-  labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
 
 mlp_performance_tibble |> 
   ggplot(aes(y = mlp_predictions, x = truth, fill = sample_type)) + 
@@ -190,21 +190,24 @@ mlp_performance_tibble |>
 
 ## pseudobinomial (pseudo-logistic regression)
 
-```{r}
+What if instead of using either of the two previous models, we used logistic regression (using a pseudobinomial fit to accommodate the soft labels)?
+
+```{r, warning = FALSE}
 glm_result <- 
   emmil_fit_glm(
     X = X, 
     z = z, 
     rho = rho, 
     zeta = zeta, 
-    #case_control_adjustment = 0, 
     num_iterations = num_iterations
   )
 
-lls <- glm_result$lls
-y <- glm_result$y
-y_list <- glm_result$y_list
-glm_model <- glm_result$model
+lls <- glm_result |> 
+  emmil_get_log_likelihoods()
+y <- 
+  glm_result |> 
+  predict(newdata = as.data.frame(X), type = "response")
+glm_model <- glm_result
 
 ```
 
@@ -239,6 +242,8 @@ glm_performance_tibble |>
 
 ## nnet via tidymodels
 
+What if we tried to integrate EM-MIL with the [tidymodels](https://www.tidymodels.org/) ecosystem of models? (Here, we fit an MLP again, but we do it the tidymodels way). 
+
 ```{r}
 nnet_spec <- 
   parsnip::mlp(
@@ -259,11 +264,15 @@ tidymodel_result <-
     model_spec = nnet_spec
   )
 
-lls <- tidymodel_result$lls
-y <- tidymodel_result$y
-y_list <- tidymodel_result$y_list
-tidymodel_model <- tidymodel_result$model
+lls <- 
+  tidymodel_result |> 
+  emmil_get_log_likelihoods()
+y <- 
+  tidymodel_result |> 
+  predict(new_data = as.data.frame(X))
+y <- y$.pred
 
+tidymodel_model <- tidymodel_result
 
 ```
 
@@ -297,15 +306,17 @@ tidymodel_performance_tibble |>
 ```
 
 
+At the moment, the log-likelihood calculation seems buggy here. All signs point to how tidymodels handles classification vs. regression (which can be fixed). 
+
 
 
 # Compare models
 
-
-
+We can compare all the models we've fit so far. 
 
 ```{r}
-glmnet_performance_tibble |> 
+model_plot <- 
+  glmnet_performance_tibble |> 
   dplyr::mutate(
     glm_predictions = glm_performance_tibble$glm_predictions, 
     mlp_predictions = mlp_performance_tibble$mlp_predictions, 
@@ -322,19 +333,49 @@ glmnet_performance_tibble |>
       factor(levels = c("glmnet", "glm", "mlp", "tidymodel")) |> 
       forcats::fct_recode(`tidymodel mlp` = "tidymodel")
   ) |> 
-  ggplot(aes(x = truth, y = prediction, fill = sample_type)) +
+  dplyr::filter(model != "tidymodel mlp") |> 
+  ggplot(aes(x = sample_type, y = prediction, fill = truth)) +
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   scale_color_discrete(drop = FALSE) + 
   facet_grid(cols = vars(model)) + 
-  theme_bw() 
+  theme_bw() + 
+  labs(
+    y = "EMMIL prediction", 
+    fill = "True cell-level label", 
+    x = "Sample type"
+  )
+
+print(model_plot)
 
 ```
 
 
 ```{r}
+scatterplot<- 
+  glmnet_performance_tibble |> 
+  dplyr::mutate(
+    glm_predictions = glm_performance_tibble$glm_predictions, 
+    mlp_predictions = mlp_performance_tibble$mlp_predictions, 
+    tidymodel_predictions = tidymodel_performance_tibble$tidymodel_predictions
+  ) |> 
+  dplyr::bind_cols(
+    dplyr::as_tibble(X)
+  ) |> 
+  tidytof::tof_reduce_dimensions(
+    pca_cols = starts_with("V"), 
+    method = "pca"
+  ) |> 
+  ggplot(aes(x = .pc1, y = .pc2, color = sample_type, shape = truth)) + 
+  geom_point(size = 3) + 
+  ggthemes::scale_color_tableau() + 
+  theme_bw() + 
+  labs(
+    shape = "True cell-level label", 
+    color = "Sample type"
+  )
 
+print(scatterplot)
 ```
-
 
 
 
