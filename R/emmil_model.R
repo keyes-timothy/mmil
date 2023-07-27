@@ -45,8 +45,8 @@ new_emmil_model <-
       stop("num_cells and num_cells_disease must be of length 1.")
     }
     
-    if (!all(c(is.integer(num_cells), is.integer(num_cells_disease)))) { 
-      stop("num_cells and num_cells_disease must be doubles.")
+    if (!all(c(is.numeric(num_cells), is.numeric(num_cells_disease)))) { 
+      stop("num_cells and num_cells_disease must be integers")
     }
     
     if (inherits(model, what = "glmnet")) { 
