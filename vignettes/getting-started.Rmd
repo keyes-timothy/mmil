@@ -105,7 +105,7 @@ lls |>
 
 glmnet_predictions <- 
   glmnet_model |> 
-  predict(newx = X, s = lambda, type = "response") |> 
+  predict(newx = X, adjust = FALSE, s = lambda, type = "response") |> 
   as.numeric()
 
 glmnet_performance_tibble <- 
@@ -120,6 +120,7 @@ glmnet_performance_tibble |>
   ggplot(aes(y = glmnet_predictions, x = truth, fill = sample_type)) + 
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   scale_x_discrete(drop = FALSE) + 
+  scale_y_continuous(limits = c(0, 1)) + 
   scale_color_discrete(drop = FALSE) + 
   theme_bw() + 
   labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
@@ -164,7 +165,7 @@ lls |>
 # (We know the labels when z == 0.)
 mlp_predictions <- 
   mlp_model |> 
-  predict(newdata = as.data.frame(X), type = "raw") |> 
+  predict(newdata = as.data.frame(X), adjust = FALSE, type = "raw") |> 
   as.numeric()
 
 mlp_performance_tibble <- 
@@ -202,11 +203,12 @@ glm_result <-
     num_iterations = num_iterations
   )
 
-lls <- glm_result |> 
+lls <- 
+  glm_result |> 
   emmil_get_log_likelihoods()
 y <- 
   glm_result |> 
-  predict(newdata = as.data.frame(X), type = "response")
+  predict(newdata = as.data.frame(X), adjust = FALSE, type = "response")
 glm_model <- glm_result
 
 ```

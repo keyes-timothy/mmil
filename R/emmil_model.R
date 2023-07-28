@@ -74,7 +74,7 @@ new_emmil_model <-
         num_cells_disease = num_cells_disease, 
         lls = lls, 
         hyperparameters = hyperparameters, 
-        class = c(class(model), "emmil_model")
+        class = c("emmil_model", class(model))
       )
     
     # return result
@@ -179,8 +179,8 @@ predict.emmil_model <-
         update_y(
           predictions = base_predictions, 
           z = z_placeholder, 
-          rho = object$rho, 
-          zeta = object$zeta
+          rho = attr(object, which = "rho"), 
+          zeta = attr(object, which = "zeta")
         )
       return(updated_predictions)
     } else {
