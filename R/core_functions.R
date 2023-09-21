@@ -19,9 +19,8 @@
 #' words, the expected number of non-disease associated cells in each sick patient.
 #' 
 #' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
-#' inherited patient label will be 1. In other words, something like the probabilty 
-#' that a random person from your population-of-interest will have the condition-of-interest
-#' (TODO: ASK ERIN ABOUT THIS). 
+#' inherited patient label will be 1. This is the probability 
+#' that a random person from your population-of-interest will have the condition-of-interest. 
 #' 
 #' @param shift 
 #'
