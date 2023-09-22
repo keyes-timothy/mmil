@@ -23,13 +23,12 @@ cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
 \item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be from a patient with 
-the condition-of-interest.}
+inherited patient label will be 1. This is the probability 
+that a random person from your population-of-interest will have the condition-of-interest.}
 
 \item{shift}{An integer indicating the magnitude of the shift applied to cells 
 whose ground truth labels are y = 1. The value of shift is added to the first 
-`round(num_features / 2)` values of the feature vectors for call ells whose 
+`round(num_features / 2)` values of the feature vectors for all cells whose 
 ground truth label is 1.}
 }
 \value{

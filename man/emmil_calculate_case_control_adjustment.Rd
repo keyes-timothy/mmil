@@ -29,9 +29,8 @@ cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease associated cells in each sick patient.}
 
 \item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be from a patient with 
-the condition-of-interest.}
+inherited patient label will be 1. This is the probability 
+that a random person from your population-of-interest will have the condition-of-interest.}
 }
 \value{
 A scalar value indicating the case control adjustment that must be 
