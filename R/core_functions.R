@@ -25,13 +25,12 @@
 #' words, the expected number of non-disease-associated cells in each sick patient.
 #' 
 #' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
-#' inherited patient label will be 1. In other words, the probability 
-#' that a random cell from your population-of-interest will be from a patient with 
-#' the condition-of-interest.
+#' inherited patient label will be 1. This is the probability 
+#' that a random person from your population-of-interest will have the condition-of-interest. 
 #' 
 #' @param shift An integer indicating the magnitude of the shift applied to cells 
 #' whose ground truth labels are y = 1. The value of shift is added to the first 
-#' `round(num_features / 2)` values of the feature vectors for call ells whose 
+#' `round(num_features / 2)` values of the feature vectors for all cells whose 
 #' ground truth label is 1. 
 #'
 #' @return A list with 3 items: X (the expression matrix), z (an integer 
@@ -110,9 +109,8 @@ emmil_initialize_y <- function(z, rho){
 #' words, the expected number of non-disease associated cells in each sick patient.
 #' 
 #' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
-#' inherited patient label will be 1. In other words, the probability 
-#' that a random cell from your population-of-interest will be from a patient with 
-#' the condition-of-interest.
+#' inherited patient label will be 1. This is the probability 
+#' that a random person from your population-of-interest will have the condition-of-interest.
 #' 
 #' @param num_cells An integer representing the total number of cells in the 
 #' dataset. Only used if z is missing (otherwise, `length(z)` is used). 
