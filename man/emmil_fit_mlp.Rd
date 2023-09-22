@@ -19,11 +19,18 @@ emmil_fit_mlp(
 \arguments{
 \item{X}{TO DO}
 
-\item{z}{TO DO}
+\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
+cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{rho}{TO DO}
+\item{rho}{A scalar value between 0 and 1 indicating the probability that 
+that a cell is NOT associated with the outcome-of-interest, given that the 
+cell was sampled from a patient who DOES have the outcome of interest. In other 
+words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{zeta}{TO DO}
+\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
+inherited patient label will be 1. In other words, the probability 
+that a random cell from your population-of-interest will be from a patient with 
+the condition-of-interest.}
 
 \item{case_control_adjustment}{TO DO}
 

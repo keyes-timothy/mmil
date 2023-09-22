@@ -4,7 +4,7 @@
 \alias{predict.emmil_model}
 \title{Make predictions for new data using an EMMIL model.}
 \usage{
-\method{predict}{emmil_model}(object, adjust = TRUE, ...)
+\method{predict}{emmil_model}(object, adjust = FALSE, ...)
 }
 \arguments{
 \item{object}{TO DO}

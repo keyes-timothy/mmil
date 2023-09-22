@@ -171,7 +171,7 @@ check_emmil_model_hyperparameters <- function(type, hyperparameters) {
 #' NULL
 #' 
 predict.emmil_model <- 
-  function(object, adjust = TRUE, ...) { 
+  function(object, adjust = FALSE, ...) { 
     base_predictions <- NextMethod(...)
     if (adjust) { 
       z_placeholder <- rep(1, times = length(base_predictions))
@@ -188,6 +188,26 @@ predict.emmil_model <-
     }
   }
 
+
+#' Find an EMMIL model's coefficients 
+#'
+#' @param object TO DO 
+#' @param adjust TO DO 
+#' @param ... TO DO 
+#'
+#' @return TO DO 
+#' 
+#' @export
+#'
+#' @examples
+#' NULL
+#' 
+coef.emmil_model <- 
+  function(object, ...) { 
+    coefficients <- NextMethod(...)
+    return(coefficients)
+  }
+
 #' Get the hyperparameters of an EMMIL object
 #'
 #' @param emmil_model_object An EMMIL model. 
@@ -200,7 +220,7 @@ predict.emmil_model <-
 #' NULL
 emmil_get_hyperparameters <- 
   function(emmil_model_object) { 
-    result <- attr(x = emmil_model_object, which = "hyperparamters")
+    result <- attr(x = emmil_model_object, which = "hyperparameters")
     return(result)
   }
 

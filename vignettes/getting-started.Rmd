@@ -382,6 +382,21 @@ print(scatterplot)
 
 
 
+```{r}
+coef(glmnet_model, s = emmil_get_hyperparameters(glmnet_model)$lambda) |> 
+  as.matrix() |> 
+  dplyr::as_tibble(rownames = "feature") |> 
+  dplyr::transmute(
+    coefficient = s1, 
+    feature = forcats::fct_reorder(feature, abs(coefficient)), 
+    sign = as.character(sign(coefficient))
+  ) |> 
+  dplyr::filter(abs(coefficient) > 0) |> 
+  ggplot(aes(x = abs(coefficient), y = feature, fill = sign)) + 
+  geom_col() + 
+  theme_bw()
+```
+
 
 
 

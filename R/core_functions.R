@@ -1,13 +1,19 @@
-# helper functions 
-
-
-####################################################
-# An example on (easy) simulated data
-####################################################
+# core_functions.R 
+#
+# This script contains files for 
 
 # simulate data ----------------------------------------------------------------
 
 #' Simulate data to demonstrate how to use the EM-MIL model. 
+#' 
+#' This function simulates a rectangular expression matrix (X), an integer 
+#' vector of observed, inherited patient labels (z) and an integer vector of
+#' unobserved, ground truth cell labels (y) for an imaginary dataset. The 
+#' expression matrix X is built such that each row represents a cell and each 
+#' column represents a biological feature (i.e. gene or protein expression). All 
+#' values in X are drawn from a normal Gaussian distribution, and expression vectors of 
+#' cells for which y = 1 are shifted from those of cells for which y = 0 
+#' using a user-specified numeric value. 
 #'
 #' @param num_cells An integer number of cells to simulate
 #' 
@@ -16,16 +22,19 @@
 #' @param rho A scalar value between 0 and 1 indicating the probability that 
 #' that a cell is NOT associated with the outcome-of-interest, given that the 
 #' cell was sampled from a patient who DOES have the outcome of interest. In other 
-#' words, the expected number of non-disease associated cells in each sick patient.
+#' words, the expected number of non-disease-associated cells in each sick patient.
 #' 
 #' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
-#' inherited patient label will be 1. In other words, something like the probabilty 
-#' that a random person from your population-of-interest will have the condition-of-interest
-#' (TODO: ASK ERIN ABOUT THIS). 
+#' inherited patient label will be 1. In other words, the probability 
+#' that a random cell from your population-of-interest will be from a patient with 
+#' the condition-of-interest.
 #' 
-#' @param shift 
+#' @param shift An integer indicating the magnitude of the shift applied to cells 
+#' whose ground truth labels are y = 1. The value of shift is added to the first 
+#' `round(num_features / 2)` values of the feature vectors for call ells whose 
+#' ground truth label is 1. 
 #'
-#' @return A list with 3 items: X (the expression matrix), z (a numeric 
+#' @return A list with 3 items: X (the expression matrix), z (an integer 
 #' vector of inherited patient labels for each cell) and true_y (an integer vector 
 #' indicating the "true" answer for whether or not a cell is associated with
 #' the outcome-of-interest (1) or not (0)). 
@@ -60,6 +69,12 @@ emmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, z
 # model initialization ---------------------------------------------------------
 
 #' A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.
+#' 
+#' This function initializes the first vector of cell-level label predictions 
+#' in an EMMIL model. All values of the vector will be between 0 and 1. 
+#' Specifically, all entries for cells for which z = 0 (cells from samples without 
+#' the condiiton-of-interest) will be 0, and entries for cells for which z = 1 
+#' (cells from samples with the condition-of-interest) will be 1 - `rho`. 
 #'
 #' @param z A numeric vector of inherited patient labels for each cell. 1 if the 
 #' cell was sampled from a patient with the disease and 0 otherwise. 
@@ -69,7 +84,7 @@ emmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, z
 #' cell was sampled from a patient who DOES have the outcome of interest. In other 
 #' words, the expected number of non-disease associated cells in each sick patient.
 #'
-#' @return A vector of the same length as z representing the initial disease-
+#' @return A numeric vector of the same length as z representing the initial disease-
 #' association probabilities for each cell in the dataset.
 #' 
 #' @export
@@ -81,7 +96,10 @@ emmil_initialize_y <- function(z, rho){
 }
 
 
-#' Title
+#' Calculate the case-control adjustment in an EMMIL model.
+#' 
+#' This function calculates the case-control adjustment used during EMMIL 
+#' modeling fitting. In brief, this adjustment ____. TODO. 
 #'
 #' @param z A numeric vector of inherited patient labels for each cell. 1 if the 
 #' cell was sampled from a patient with the disease and 0 otherwise. 
@@ -92,11 +110,16 @@ emmil_initialize_y <- function(z, rho){
 #' words, the expected number of non-disease associated cells in each sick patient.
 #' 
 #' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
-#' inherited patient label will be 1. In other words, something like the probabilty 
-#' that a random person from your population-of-interest will have the condition-of-interest
-#' (TODO: ASK ERIN ABOUT THIS). 
-#' @param num_cells TO DO 
-#' @param num_cells_disease TO DO  
+#' inherited patient label will be 1. In other words, the probability 
+#' that a random cell from your population-of-interest will be from a patient with 
+#' the condition-of-interest.
+#' 
+#' @param num_cells An integer representing the total number of cells in the 
+#' dataset. Only used if z is missing (otherwise, `length(z)` is used). 
+#' 
+#' @param num_cells_disease An integer representing the number of cells in the 
+#' dataset from samples with the condition- or disease-of-interest. 
+#' Only used if z is missing (otherwise, `sum(z)` is used).  
 #'
 #' @return A scalar value indicating the case control adjustment that must be 
 #' added to our logit to adjust the intercept of our model. 
@@ -130,12 +153,26 @@ emmil_calculate_case_control_adjustment <-
 #' Fit an EMMIL model using glmnet.
 #'
 #' @param X TODO
-#' @param z TODO
-#' @param rho TODO
-#' @param zeta TODO
+#' 
+#' @param z A numeric vector of inherited patient labels for each cell. 1 if the 
+#' cell was sampled from a patient with the disease and 0 otherwise. 
+#' 
+#' @param rho A scalar value between 0 and 1 indicating the probability that 
+#' that a cell is NOT associated with the outcome-of-interest, given that the 
+#' cell was sampled from a patient who DOES have the outcome of interest. In other 
+#' words, the expected number of non-disease-associated cells in each sick patient.
+#' 
+#' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
+#' inherited patient label will be 1. In other words, the probability 
+#' that a random cell from your population-of-interest will be from a patient with 
+#' the condition-of-interest.
+#' 
 #' @param lambda TODO
+#' 
 #' @param case_control_adjustment TODO
+#' 
 #' @param num_iterations TODO
+#' 
 #' @param alpha TODO
 #'
 #' @return A list.
@@ -205,9 +242,16 @@ emmil_fit_glmnet <- function(X, z, rho, zeta, lambda, alpha = 1, case_control_ad
 #' Fit an EMMIL model using a generalized linear model.
 #'
 #' @param X TODO
-#' @param z TODO
-#' @param rho TODO
-#' @param zeta TODO
+#' @param z A numeric vector of inherited patient labels for each cell. 1 if the 
+#' cell was sampled from a patient with the disease and 0 otherwise. 
+#' @param rho A scalar value between 0 and 1 indicating the probability that 
+#' that a cell is NOT associated with the outcome-of-interest, given that the 
+#' cell was sampled from a patient who DOES have the outcome of interest. In other 
+#' words, the expected number of non-disease-associated cells in each sick patient.
+#' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
+#' inherited patient label will be 1. In other words, the probability 
+#' that a random cell from your population-of-interest will be from a patient with 
+#' the condition-of-interest.
 #' @param lambda TODO
 #' @param case_control_adjustment TODO
 #' @param num_iterations TODO
@@ -280,9 +324,16 @@ emmil_fit_glm <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iter
 #' Fit an EMMIL model using a multilayer perceptron.
 #'
 #' @param X TO DO 
-#' @param z TO DO 
-#' @param rho TO DO 
-#' @param zeta TO DO 
+#' @param z A numeric vector of inherited patient labels for each cell. 1 if the 
+#' cell was sampled from a patient with the disease and 0 otherwise. 
+#' @param rho A scalar value between 0 and 1 indicating the probability that 
+#' that a cell is NOT associated with the outcome-of-interest, given that the 
+#' cell was sampled from a patient who DOES have the outcome of interest. In other 
+#' words, the expected number of non-disease-associated cells in each sick patient.
+#' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
+#' inherited patient label will be 1. In other words, the probability 
+#' that a random cell from your population-of-interest will be from a patient with 
+#' the condition-of-interest.
 #' @param case_control_adjustment TO DO 
 #' @param num_iterations TO DO 
 #' @param num_neurons TO DO 
@@ -369,9 +420,16 @@ emmil_fit_mlp <-
 #' Title
 #'
 #' @param X TO DO
-#' @param z TO DO
-#' @param rho TO DO
-#' @param zeta TO DO
+#' @param z A numeric vector of inherited patient labels for each cell. 1 if the 
+#' cell was sampled from a patient with the disease and 0 otherwise. 
+#' @param rho A scalar value between 0 and 1 indicating the probability that 
+#' that a cell is NOT associated with the outcome-of-interest, given that the 
+#' cell was sampled from a patient who DOES have the outcome of interest. In other 
+#' words, the expected number of non-disease-associated cells in each sick patient.
+#' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an 
+#' inherited patient label will be 1. In other words, the probability 
+#' that a random cell from your population-of-interest will be from a patient with 
+#' the condition-of-interest.
 #' @param case_control_adjustment TO DO
 #' @param num_iterations TO DO
 #' @param model_spec Any tidymodels model specification.

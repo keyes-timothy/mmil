@@ -2,7 +2,7 @@
 % Please edit documentation in R/core_functions.R
 \name{emmil_calculate_case_control_adjustment}
 \alias{emmil_calculate_case_control_adjustment}
-\title{Title}
+\title{Calculate the case-control adjustment in an EMMIL model.}
 \usage{
 emmil_calculate_case_control_adjustment(
   z,
@@ -16,9 +16,12 @@ emmil_calculate_case_control_adjustment(
 \item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{num_cells}{TO DO}
+\item{num_cells}{An integer representing the total number of cells in the 
+dataset. Only used if z is missing (otherwise, `length(z)` is used).}
 
-\item{num_cells_disease}{TO DO}
+\item{num_cells_disease}{An integer representing the number of cells in the 
+dataset from samples with the condition- or disease-of-interest. 
+Only used if z is missing (otherwise, `sum(z)` is used).}
 
 \item{rho}{A scalar value between 0 and 1 indicating the probability that 
 that a cell is NOT associated with the outcome-of-interest, given that the 
@@ -26,16 +29,17 @@ cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease associated cells in each sick patient.}
 
 \item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. In other words, something like the probabilty 
-that a random person from your population-of-interest will have the condition-of-interest
-(TODO: ASK ERIN ABOUT THIS).}
+inherited patient label will be 1. In other words, the probability 
+that a random cell from your population-of-interest will be from a patient with 
+the condition-of-interest.}
 }
 \value{
 A scalar value indicating the case control adjustment that must be 
 added to our logit to adjust the intercept of our model.
 }
 \description{
-Title
+This function calculates the case-control adjustment used during EMMIL 
+modeling fitting. In brief, this adjustment ____. TODO.
 }
 \examples{
 NULL
