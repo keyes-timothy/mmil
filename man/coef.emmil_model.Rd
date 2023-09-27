@@ -7,14 +7,12 @@
 \method{coef}{emmil_model}(object, ...)
 }
 \arguments{
-\item{object}{TO DO}
+\item{object}{An EMMIL model.}
 
-\item{...}{TO DO}
-
-\item{adjust}{TO DO}
+\item{...}{Additional arguments to pass to the subclass-specific `coef` function.}
 }
 \value{
-TO DO
+TODO - Timothy
 }
 \description{
 Find an EMMIL model's coefficients

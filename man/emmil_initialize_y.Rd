@@ -2,7 +2,7 @@
 % Please edit documentation in R/core_functions.R
 \name{emmil_initialize_y}
 \alias{emmil_initialize_y}
-\title{A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.}
+\title{A function that initializes y_0 (the y vector for the 0th iteration) for the EMMIL algorithm.}
 \usage{
 emmil_initialize_y(z, rho)
 }
@@ -23,6 +23,6 @@ association probabilities for each cell in the dataset.
 This function initializes the first vector of cell-level label predictions 
 in an EMMIL model. All values of the vector will be between 0 and 1. 
 Specifically, all entries for cells for which z = 0 (cells from samples without 
-the condiiton-of-interest) will be 0, and entries for cells for which z = 1 
+the condition-of-interest) will be 0, and entries for cells for which z = 1 
 (cells from samples with the condition-of-interest) will be 1 - `rho`.
 }

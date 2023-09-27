@@ -4,17 +4,15 @@
 \alias{predict.emmil_model}
 \title{Make predictions for new data using an EMMIL model.}
 \usage{
-\method{predict}{emmil_model}(object, adjust = FALSE, ...)
+\method{predict}{emmil_model}(object, ...)
 }
 \arguments{
-\item{object}{TO DO}
+\item{object}{An emmil_model object.}
 
-\item{adjust}{TO DO}
-
-\item{...}{TO DO}
+\item{...}{Additional parameters to pass to the object subclass.}
 }
 \value{
-TO DO
+Predictions based on the subclass predict method
 }
 \description{
 Make predictions for new data using an EMMIL model.

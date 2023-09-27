@@ -2,7 +2,7 @@
 % Please edit documentation in R/core_functions.R
 \name{emmil_simulate_data}
 \alias{emmil_simulate_data}
-\title{Simulate data to demonstrate how to use the EM-MIL model.}
+\title{Simulate data to demonstrate how to use the EMMIL model.}
 \usage{
 emmil_simulate_data(
   num_cells = 100,

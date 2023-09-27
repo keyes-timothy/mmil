@@ -4,10 +4,13 @@
 \alias{emmil_plot_lls}
 \title{Plot the log-likelihood values over each iteration of EMMIL.}
 \usage{
-emmil_plot_lls(lls, theme = ggplot2::theme_bw(), ...)
+emmil_plot_lls(emmil_model_object, lls, theme = ggplot2::theme_bw(), ...)
 }
 \arguments{
-\item{lls}{A numeric vector of log-likelihood values.}
+\item{emmil_model_object}{An EMMIL model fit using the high-level API.}
+
+\item{lls}{A numeric vector of log-likelihood values. Will be ignored if 
+emmil_model_object is provided.}
 
 \item{theme}{A ggplot2 theme. Defaults to ggplot2::theme_bw().}
 

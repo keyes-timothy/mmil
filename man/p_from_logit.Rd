@@ -14,5 +14,5 @@ A numeric vector of the same length as logit representing the probability
 that each observation is of class 1.
 }
 \description{
-Obtain a binary class probability from a logit
+This is the expit function.
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/helper_functions.R
 \name{update_y}
 \alias{update_y}
-\title{After a maximization step is computed by the EM-MIL algorithm, update the
+\title{After a maximization step is computed by the EMMIL algorithm, update the
 y-values (disease-association probabilities) for each cell in the next iteration}
 \usage{
 update_y(predictions, z, rho, zeta)
@@ -15,14 +15,12 @@ update_y(predictions, z, rho, zeta)
 \item{rho}{The probability that a cell from a diseased sample is not 
 disease-associated (i.e. the probability that y = 0 when z = 1).}
 
-\item{zeta}{The probability that the inherited patient label of any given cell will be 1. 
-(Will this be complicated by the fact that the patients are not balanced in the dataset? 
-I.e. patients will not have the same number of cells).}
+\item{zeta}{The probability that the inherited patient label of any given cell will be 1.}
 }
 \value{
 A numeric vector of updated probabilities that each cell is disease-associated.
 }
 \description{
-After a maximization step is computed by the EM-MIL algorithm, update the
+After a maximization step is computed by the EMMIL algorithm, update the
 y-values (disease-association probabilities) for each cell in the next iteration
 }

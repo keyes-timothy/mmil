@@ -1,5 +1,5 @@
 ---
-title: "Getting started with EM-MIL"
+title: "Getting started with EMMIL"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{getting-started}
@@ -16,10 +16,19 @@ knitr::opts_chunk$set(
 )
 ```
 
+
+
 ```{r setup}
+# maybe EMMIL stands for 
+# Expectation-
+# Maximization for 
+# Mixture-based 
+# Instance 
+# Labeling
 library(emmil)
 library(ggplot2)
 ```
+
 
 ```{r}
 #parameters 
@@ -30,35 +39,73 @@ num_iterations <- 100
 ```
 
 
+# Introduction
+
+[start]
+
 # Simulate data
 
+First, we simulate data for this vignette. Specifically, we simulate a dataset of 1000 cells, about half of which are from the diseased-condition. Each cell is defined by a feature vector of 10 features. The disease-associated cells are have half of their features shifted from those of non-disease-associated cells by adding a constant value of 4 to each. The data are simulated such that the disease-associated cells are only present in "patients" who have the disease, but non-disease associated cells are present in both healthy and sick "patients".
 
 ```{r}
 simulated_data <- 
   emmil_simulate_data(
-    num_cells = 100, 
+    num_cells = 1000, 
     num_features = 10, 
     rho = rho, 
     zeta = zeta, 
     shift = 4
   )
 
+# single-cell feature matrix
 X <- simulated_data$X
+
+# inherited labels for each cell
 z <- simulated_data$z
+
+# true disease-association class for each cell
 true_y <- simulated_data$true_y
 ```
 
-# Calculate case-control intercept adjustment
+We can visualize the simulated dataset using a scatterplot. Red cells are drawn from sick patients, and blue cells are drawn from healthy patients. Circular cells are from the disease-associated population(s), and triangular cells aren't. 
 
+From this plot, it's easy to see that the disease-associated cells are phenotypically distinct from the non-disease-associated cells - and that their inherited patient-level labels (represented by color) don't correspond to this phenotypic distinction. In short, what we "know" before any modeling are the the inherited patient-level labels (the colors), but what we **want** to know are the true cell-level instance labels (the shapes) because this is where the interesting biology is happening. (For example, we may wish to isolate the disease-associated cells from our patient samples and study them to develop targeted therapies).
+
+```{r} 
+# plot data
+scatterplot <- 
+  prcomp(x = X)$x |> 
+  dplyr::as_tibble() |> 
+  dplyr::mutate(
+    sample_type = dplyr::if_else(z == 0, "healthy sample", "disease sample"), 
+    truth = dplyr::if_else(true_y == 0, "healthy cell", "disease cell")
+  ) |> 
+  ggplot(aes(x = PC1, y = PC2, color = sample_type, shape = truth)) + 
+  geom_point(size = 1, alpha = 0.8) + 
+  scale_color_brewer(palette = 6, type = "qual") + 
+  theme_bw() + 
+  labs(
+    shape = "True cell-level label", 
+    color = "Sample type"
+  )
+
+print(scatterplot)
+```
+
+
+# The low-level API 
+
+This package provides several functions for calculating quantities that are needed to apply the Mixture LASSO/EMMIL/AlgorithmName to your own model, as long as that model's objective is to optimize the binary classification log-likelihood.  Here are some of those functions: 
+
+
+## Calculating the case-control intercept 
+
+[A blurb about the case-control intercept.]
 
 ```{r}
-# From Erin: ------ 
 # Here we address our sampling bias.
 # This should be pretty close to 0, because we don't have any sampling bias!
 # Including for completeness.
-# -------------------------
-# Question from Tim: Can we estimate rho and zeta (but especially zeta) from the training data? 
-# I guess that kind of defeats the point of using an adjustment in the first place. 
 case_control_intercept_adjustment <- 
   emmil_calculate_case_control_adjustment(
     z = z, 
@@ -69,44 +116,105 @@ case_control_intercept_adjustment <-
 print(round(case_control_intercept_adjustment, 4))
 ```
 
+## Calculating the log-likelihood
 
+[A blurb about `emmil_loglik`]
 
-# Fit model
-
-## glmnet
 
 ```{r}
-glmnet_result <- 
+# Some code
+
+```
+
+## Other low-level functions
+
+* `emmil_initialize_y`
+* `emmil_calculate_sample_label_adjustment`
+* `emmil_plot_lls`
+
+# The high-level API 
+
+This package also provides a high-level API that can be used to fit `glmnet`, `glm`, or `nnet` models using the Mixture LASSO/EMMIL/AlgorithmName schema. 
+
+## Fit model
+
+We can demonstrate some functions in the high-level API using our simulated data. 
+
+### glmnet
+
+```{r}
+# fit the model
+glmnet_model <- 
   emmil_fit_glmnet(
     X = X, 
     z = z, 
     rho = rho, 
     zeta = zeta, 
     lambda = lambda, 
-    case_control_adjustment = case_control_intercept_adjustment, 
-    num_iterations = num_iterations
+    case_control_adjustment = case_control_intercept_adjustment, # I am 
+    # thinking about removing the case_control_adjustment argument in the 
+    # high-level API (i.e. the training functions that we provide) because 
+    # the case-control adjustment can be calculated from the other parameters, 
+    # so there is some redundancy. We can simply calculate it on the fly instead. 
+    # TODO ERIN: What do you think?
+    num_iterations = num_iterations, # the max number of iterations for model training
+    early_stopping_patience = 3L, # The number of iterations that can have improvements
+    # in the LL smaller than `early_stopping_tolerance` before training is stopped
+    early_stopping_tolerance = 1e-4 # the smallest improvement for which the 
+    # the model will still be considered "improving" by our patience schema
   )
 
-lls <- emmil_get_log_likelihoods(glmnet_result)
-y <- 
-  predict(
-    glmnet_result, 
-    newx = X, 
-    s = emmil_get_hyperparameters(glmnet_result)$lambda, 
-    type = "response"
-  )
-glmnet_model <- glmnet_result
-
+# retrieve LL values for all training iterations
+lls <- emmil_get_log_likelihoods(glmnet_model)
 ```
 
-```{r}
-lls |> 
-  emmil_plot_lls()
 
+
+```{r}
+# plot LL progress
+glmnet_model |> 
+  emmil_plot_lls() + 
+  labs(
+    caption = paste0(
+      "Notice that the number of max iterations was ", 
+      num_iterations, 
+      ", but the patience schema stopped training after only ", 
+      length(lls), 
+      " iterations."
+    )
+  )
+
+# calculate base (unadjusted predictions) using the trained model
+glmnet_predictions_unadjusted <- 
+  glmnet_model |> 
+  # predictions are probabilities between 0 and 1
+  predict(newx = X, s = lambda, type = "response") |> 
+  as.numeric()
+
+# calculate predictions with case-control and sample-label adjustments
 glmnet_predictions <- 
   glmnet_model |> 
-  predict(newx = X, adjust = FALSE, s = lambda, type = "response") |> 
-  as.numeric()
+  predict(newx = X, s = lambda, type = "response") |> 
+  as.numeric() |> 
+  # apply case-control adjustment
+  emmil_adjust_predictions_case_control(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # let EMMIL know that the predictions are probabilities, not logits (
+    # it can accept either when doing the adjustments)
+    prediction_type = "prob"
+  ) |> 
+  # apply sample-label adjustment for cells from sick people
+  emmil_adjust_predictions_sample_label(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # optional to set the final model's predictions for cells taken from 
+    # healthy patients to a probability of 0 (or logit of -Inf)
+    adjust_healthy_samples = FALSE, 
+    prediction_type = "prob"
+  )
 
 glmnet_performance_tibble <- 
   tibble::tibble(
@@ -114,8 +222,9 @@ glmnet_performance_tibble <-
   truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
   z = z, 
   sample_type = dplyr::if_else(z == 0, "healthy sample", "disease sample")
-) 
+)
 
+# plot adjusted probabilities
 glmnet_performance_tibble |> 
   ggplot(aes(y = glmnet_predictions, x = truth, fill = sample_type)) + 
   geom_boxplot(position = position_dodge(preserve = "single")) + 
@@ -126,12 +235,12 @@ glmnet_performance_tibble |>
   labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
 ```
 
-## mlp
+### nnet
 
-What if instead of using a glmnet model, we used a multilayer perceptron? 
+What if instead of using a glmnet model, we used a perceptron? 
 
 ```{r}
-mlp_result <- 
+nnet_model <- 
   emmil_fit_mlp(
     X = X, 
     z = z, 
@@ -143,58 +252,77 @@ mlp_result <-
     maxit = 100
   )
 
-lls <- mlp_result |> 
+lls <- 
+  nnet_model |> 
   emmil_get_log_likelihoods()
-
-y <- 
-  mlp_result |> 
-  predict(newdata = X, type = "raw")
-
-mlp_model <- mlp_result
 
 ```
 
 
 ```{r}
-# This should be increasing:
-lls |> 
-  emmil_plot_lls()
+# plot LL at each iteration 
+nnet_model |> 
+  emmil_plot_lls() + 
+  labs(
+    caption = paste0(
+      "Notice that the number of max iterations was ", 
+      num_iterations, 
+      ", but the patience schema stopped training after only ", 
+      length(lls), 
+      " iterations."
+    )
+  )
 
-# This should differentiate between the groups.
-# Let's only look at the instances where z == 1.
-# (We know the labels when z == 0.)
-mlp_predictions <- 
-  mlp_model |> 
+nnet_predictions <- 
+  nnet_model |> 
   predict(newdata = as.data.frame(X), adjust = FALSE, type = "raw") |> 
-  as.numeric()
+  as.numeric() |> 
+  # apply case-control adjustment
+  emmil_adjust_predictions_case_control(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # let EMMIL know that the predictions are probabilities, not logits (
+    # it can accept either when doing the adjustments)
+    prediction_type = "prob"
+  ) |> 
+  # apply sample-label adjustment for cells from sick people
+  emmil_adjust_predictions_sample_label(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # optional to set the final model's predictions for cells taken from 
+    # healthy patients to a probability of 0 (or logit of -Inf)
+    adjust_healthy_samples = FALSE, 
+    prediction_type = "prob"
+  )
 
-mlp_performance_tibble <- 
+nnet_performance_tibble <- 
   tibble::tibble(
-    mlp_predictions = mlp_predictions, 
+    nnet_predictions = nnet_predictions, 
     truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
     z = z, 
     sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
   ) 
 
 
-mlp_performance_tibble |> 
-  ggplot(aes(y = mlp_predictions, x = truth, fill = sample_type)) + 
+nnet_performance_tibble |> 
+  ggplot(aes(y = nnet_predictions, x = truth, fill = sample_type)) + 
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   scale_x_discrete(drop = FALSE) + 
   scale_color_discrete(drop = FALSE) + 
   scale_y_continuous(limits = c(0, 1)) + 
   theme_bw() + 
-  labs(subtitle = "MLP performance", x = "true label", y = "predicted probability")
+  labs(subtitle = "Perceptron performance", x = "true label", y = "predicted probability")
 ```
 
 
-
-## pseudobinomial (pseudo-logistic regression)
+### pseudobinomial (pseudo-logistic regression)
 
 What if instead of using either of the two previous models, we used logistic regression (using a pseudobinomial fit to accommodate the soft labels)?
 
 ```{r, warning = FALSE}
-glm_result <- 
+glm_model <- 
   emmil_fit_glm(
     X = X, 
     z = z, 
@@ -204,26 +332,47 @@ glm_result <-
   )
 
 lls <- 
-  glm_result |> 
+  glm_model |> 
   emmil_get_log_likelihoods()
-y <- 
-  glm_result |> 
-  predict(newdata = as.data.frame(X), adjust = FALSE, type = "response")
-glm_model <- glm_result
-
 ```
 
 
 
 ```{r}
-lls |> 
+glm_model |> 
   emmil_plot_lls() + 
-  labs(subtitle = "logistic regression log-likelihood results")
+  labs(
+    caption = paste0(
+      "Notice that the number of max iterations was ", 
+      num_iterations, 
+      ", but the patience schema stopped training after only ", 
+      length(lls), 
+      " iterations."
+    )
+  )
 
 glm_predictions <- 
   glm_model |> 
-  predict(newdata = as.data.frame(X), type = "response")
-
+  predict(newdata = as.data.frame(X), type = "response") |> 
+  # apply case-control adjustment
+  emmil_adjust_predictions_case_control(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # let EMMIL know that the predictions are probabilities, not logits (
+    # it can accept either when doing the adjustments)
+    prediction_type = "prob"
+  ) |> 
+  # apply sample-label adjustment for cells from sick people
+  emmil_adjust_predictions_sample_label(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # optional to set the final model's predictions for cells taken from 
+    # healthy patients to a probability of 0 (or logit of -Inf)
+    adjust_healthy_samples = FALSE, 
+    prediction_type = "prob"
+  )
 
 glm_performance_tibble <- 
   tibble::tibble(
@@ -242,77 +391,7 @@ glm_performance_tibble |>
   labs(subtitle = "Logistic regression performance", x = "true label", y = "predicted probability")
 ```
 
-## nnet via tidymodels
-
-What if we tried to integrate EM-MIL with the [tidymodels](https://www.tidymodels.org/) ecosystem of models? (Here, we fit an MLP again, but we do it the tidymodels way). 
-
-```{r}
-nnet_spec <- 
-  parsnip::mlp(
-    engine = "nnet", 
-    mode = "regression", 
-    hidden_units = 5, 
-    penalty = 0.4, 
-    epochs = 10,
-  )
-
-tidymodel_result <- 
-  emmil_fit_tidymodels(
-    X = X, 
-    z = z, 
-    rho = rho, 
-    zeta = zeta, 
-    num_iterations = num_iterations, 
-    model_spec = nnet_spec
-  )
-
-lls <- 
-  tidymodel_result |> 
-  emmil_get_log_likelihoods()
-y <- 
-  tidymodel_result |> 
-  predict(new_data = as.data.frame(X))
-y <- y$.pred
-
-tidymodel_model <- tidymodel_result
-
-```
-
-
-```{r}
-lls |> 
-  emmil_plot_lls() + 
-  labs(subtitle = "tidymodels nnet log-likelihood results")
-
-tidymodel_predictions <- 
-  tidymodel_model |> 
-  predict(new_data = as.data.frame(X), type = "raw") |> 
-  pmin(1) |> 
-  pmax(0)
-
-
-tidymodel_performance_tibble <- 
-  tibble::tibble(
-    tidymodel_predictions = tidymodel_predictions, 
-    truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
-    z = z, 
-    sample_type = dplyr::if_else(z == 0, "healthy sample", "cancer sample")
-  ) 
-
-tidymodel_performance_tibble |> 
-  ggplot(aes(y = tidymodel_predictions, x = truth, fill = sample_type)) + 
-  geom_boxplot(position = position_dodge(preserve = "single")) + 
-  scale_color_discrete(drop = FALSE) + 
-  theme_bw() + 
-  labs(subtitle = "Tidymodels nnet performance", x = "true label", y = "predicted probability")
-```
-
-
-At the moment, the log-likelihood calculation seems buggy here. All signs point to how tidymodels handles classification vs. regression (which can be fixed). 
-
-
-
-# Compare models
+## Compare models
 
 We can compare all the models we've fit so far. 
 
@@ -321,8 +400,7 @@ model_plot <-
   glmnet_performance_tibble |> 
   dplyr::mutate(
     glm_predictions = glm_performance_tibble$glm_predictions, 
-    mlp_predictions = mlp_performance_tibble$mlp_predictions, 
-    tidymodel_predictions = tidymodel_performance_tibble$tidymodel_predictions
+    nnet_predictions = nnet_performance_tibble$nnet_predictions
   ) |> 
   tidyr::pivot_longer(
     cols = ends_with("_predictions"), 
@@ -332,19 +410,18 @@ model_plot <-
   dplyr::mutate(
     model = 
       stringr::str_remove(model, "_predictions") |> 
-      factor(levels = c("glmnet", "glm", "mlp", "tidymodel")) |> 
-      forcats::fct_recode(`tidymodel mlp` = "tidymodel")
+      factor(levels = c("glmnet", "glm", "nnet"))
   ) |> 
-  dplyr::filter(model != "tidymodel mlp") |> 
   ggplot(aes(x = sample_type, y = prediction, fill = truth)) +
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   scale_color_discrete(drop = FALSE) + 
   facet_grid(cols = vars(model)) + 
   theme_bw() + 
+  theme(axis.text.x = element_text(size = 8, angle = 20, hjust = 1)) + 
   labs(
     y = "EMMIL prediction", 
     fill = "True cell-level label", 
-    x = "Sample type"
+    x = "Sample label"
   )
 
 print(model_plot)
@@ -352,35 +429,7 @@ print(model_plot)
 ```
 
 
-```{r}
-scatterplot<- 
-  glmnet_performance_tibble |> 
-  dplyr::mutate(
-    glm_predictions = glm_performance_tibble$glm_predictions, 
-    mlp_predictions = mlp_performance_tibble$mlp_predictions, 
-    tidymodel_predictions = tidymodel_performance_tibble$tidymodel_predictions
-  ) |> 
-  dplyr::bind_cols(
-    dplyr::as_tibble(X)
-  ) |> 
-  tidytof::tof_reduce_dimensions(
-    pca_cols = starts_with("V"), 
-    method = "pca"
-  ) |> 
-  ggplot(aes(x = .pc1, y = .pc2, color = sample_type, shape = truth)) + 
-  geom_point(size = 3) + 
-  ggthemes::scale_color_tableau() + 
-  theme_bw() + 
-  labs(
-    shape = "True cell-level label", 
-    color = "Sample type"
-  )
-
-print(scatterplot)
-```
-
-
-
+The coefficients make sense because we have 10 features, the first 5 of which actually differ between the disease-associated and non-disease-associated cells. 
 
 ```{r}
 coef(glmnet_model, s = emmil_get_hyperparameters(glmnet_model)$lambda) |> 
@@ -388,15 +437,13 @@ coef(glmnet_model, s = emmil_get_hyperparameters(glmnet_model)$lambda) |>
   dplyr::as_tibble(rownames = "feature") |> 
   dplyr::transmute(
     coefficient = s1, 
-    feature = forcats::fct_reorder(feature, abs(coefficient)), 
-    sign = as.character(sign(coefficient))
+    feature = forcats::fct_reorder(feature, abs(coefficient))
   ) |> 
-  dplyr::filter(abs(coefficient) > 0) |> 
-  ggplot(aes(x = abs(coefficient), y = feature, fill = sign)) + 
+  dplyr::filter(abs(coefficient) > 0, feature != "(Intercept)") |> 
+  ggplot(aes(x = abs(coefficient), y = feature)) + 
   geom_col() + 
   theme_bw()
 ```
-
 
 
 

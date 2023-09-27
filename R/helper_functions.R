@@ -1,4 +1,4 @@
-# EM-MIL helper functions
+# EMMIL helper functions
 
 #' A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.
 #'
@@ -19,6 +19,8 @@ initialize_y <- function(z, rho){
 }
 
 #' Obtain a binary class probability from a logit
+#' 
+#' This is the expit function.
 #'
 #' @param logit A numeric vector of logit (log-odds) values
 #'
@@ -31,10 +33,25 @@ p_from_logit <- function(logit) {
   return(prediction)
 }
 
-# expectation step
-# xb is the logit that comes out of the glmnet model 
+# an alias
+expit <- p_from_logit
 
-#' After a maximization step is computed by the EM-MIL algorithm, update the
+
+#' The logit function. 
+#'
+#' @param p A vector of numeric scores (generally, probabilities between 0 and 1).
+#'
+#' @return A vector of the same length as `p`, after logit transformation.
+#' 
+#'
+#' @examples
+#' NULL
+#' 
+logit <- function(p) {
+  return(log(p / (1 - p)))
+}
+
+#' After a maximization step is computed by the EMMIL algorithm, update the
 #' y-values (disease-association probabilities) for each cell in the next iteration 
 #'
 #' @param predictions The (logit) model predictions from the maximization step
@@ -42,16 +59,17 @@ p_from_logit <- function(logit) {
 #' @param rho The probability that a cell from a diseased sample is not 
 #' disease-associated (i.e. the probability that y = 0 when z = 1). 
 #' @param zeta The probability that the inherited patient label of any given cell will be 1. 
-#' (Will this be complicated by the fact that the patients are not balanced in the dataset? 
-#' I.e. patients will not have the same number of cells). 
 #'
 #' @return A numeric vector of updated probabilities that each cell is disease-associated.
 #'
 update_y <- function(predictions, z, rho, zeta) {
-  intercept_adjustment <- -log(rho * zeta/(1 - (1-rho) * zeta))
+  # adjustment for cells sampled from from people with the disease
+  intercept_adjustment <- 
+    emmil_calculate_sample_label_adjustment(rho = rho, zeta = zeta)
   
   y <- rep(0, length(z))
-  y[z == 1] <- p_from_logit(predictions[z == 1] + intercept_adjustment)
+  adjusted_logits <- predictions[z == 1] + intercept_adjustment
+  y[z == 1] <- p_from_logit(adjusted_logits)
   return(y)
 }
 
@@ -70,8 +88,10 @@ update_y <- function(predictions, z, rho, zeta) {
 #' disease-associated (i.e. the probability that y = 0 when z = 1).
 #'
 #' @return A numeric scalar indicating the log-likelihood for the current iteration.
+#' 
+#' @export
 #'
-loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
+emmil_loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
   ll <- 0
   ll <- 
     ll + 
@@ -87,3 +107,6 @@ loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
   ll = ll - sum(log(exp(predictions) + 1))
   return(ll)
 }
+
+# alias
+loglik <- emmil_loglik

@@ -1,20 +1,27 @@
 Package: emmil
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Expectation-Maximization for Mixture-based Instance Labeling
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Timothy Keyes & Erin Craig
+Maintainer: Timothy Keyes <tkeyes@stanford.edu>
+Description: 
+    This package implements the Mixture Lasso algorithm described in XXXXXXXXX. 
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Suggests: 
+    dplyr,
+    forcats,
     knitr,
-    rmarkdown
+    rmarkdown,
+    stringr,
+    tibble,
+    tidyr
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 Imports: 
     ggplot2,
     glmnet,
-    parsnip
+    nnet,
+    parsnip,
+    stats

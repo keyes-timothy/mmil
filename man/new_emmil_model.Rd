@@ -2,7 +2,7 @@
 % Please edit documentation in R/emmil_model.R
 \name{new_emmil_model}
 \alias{new_emmil_model}
-\title{Construct an EMMIL model.}
+\title{Construct a MixtureLASSO model.}
 \usage{
 new_emmil_model(
   model,
@@ -34,7 +34,7 @@ An "emmil_model", an S3 object subclass of the original model class.
 Attributes include rho, zeta, num_cells, num_cells_disease, and hyperparameters.
 }
 \description{
-Construct an EMMIL model.
+Construct a MixtureLASSO model.
 }
 \seealso{
 Other emmil_model utilities: 

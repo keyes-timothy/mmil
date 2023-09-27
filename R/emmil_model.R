@@ -2,7 +2,7 @@
 #
 # Methods for the S3 object "emmil_model"
 
-#' Construct an EMMIL model. 
+#' Construct a MixtureLASSO model. 
 #' 
 #' @param model TO DO 
 #' @param rho TO DO 
@@ -78,7 +78,6 @@ new_emmil_model <-
       )
     
     # return result
-    
     return(emmil_model)
   }
 
@@ -159,43 +158,29 @@ check_emmil_model_hyperparameters <- function(type, hyperparameters) {
 
 #' Make predictions for new data using an EMMIL model. 
 #'
-#' @param object TO DO 
-#' @param adjust TO DO 
-#' @param ... TO DO 
+#' @param object An emmil_model object.
+#' @param ... Additional parameters to pass to the object subclass. 
 #'
-#' @return TO DO 
+#' @return Predictions based on the subclass predict method
 #' 
 #' @export
 #'
 #' @examples
 #' NULL
 #' 
-predict.emmil_model <- 
-  function(object, adjust = FALSE, ...) { 
-    base_predictions <- NextMethod(...)
-    if (adjust) { 
-      z_placeholder <- rep(1, times = length(base_predictions))
-      updated_predictions <- 
-        update_y(
-          predictions = base_predictions, 
-          z = z_placeholder, 
-          rho = attr(object, which = "rho"), 
-          zeta = attr(object, which = "zeta")
-        )
-      return(updated_predictions)
-    } else {
-      return(base_predictions)
-    }
-  }
+predict.emmil_model <- function(object, ...) { 
+  base_predictions <- NextMethod(...)
+  return(base_predictions)
+}
 
 
 #' Find an EMMIL model's coefficients 
 #'
-#' @param object TO DO 
-#' @param adjust TO DO 
-#' @param ... TO DO 
+#' @param object An EMMIL model. 
+#' 
+#' @param ... Additional arguments to pass to the subclass-specific `coef` function. 
 #'
-#' @return TO DO 
+#' @return TODO - Timothy
 #' 
 #' @export
 #'
@@ -240,3 +225,9 @@ emmil_get_log_likelihoods <-
     result <- attr(x = emmil_model_object, which = "lls")
     return(result)
   }
+
+
+
+
+
+
