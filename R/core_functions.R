@@ -65,6 +65,65 @@ emmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, z
   return(result)
 }
 
+#' Simulate data to with a particular choice of beta, to measure model performance.
+#'
+#' @param num_cells An integer number of cells to simulate
+#'
+#' @param rho A scalar value between 0 and 1 indicating the probability that
+#' that a cell is NOT associated with the outcome-of-interest, given that the
+#' cell was sampled from a patient who DOES have the outcome of interest. In other
+#' words, the expected number of non-disease associated cells in each sick patient.
+#'
+#' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an
+#' inherited patient label will be 1. This is the probability
+#' that a random person from your population-of-interest will have the condition-of-interest.
+#'
+#' @param beta True model parameters determining P(y = 1 | X).
+#'
+#' @return A list with 3 items: X (the expression matrix), z (a numeric
+#' vector of inherited patient labels for each cell) and true_y (an integer vector
+#' indicating the "true" answer for whether or not a cell is associated with
+#' the outcome-of-interest (1) or not (0)).
+#'
+#' @export
+#'
+#' @examples
+#' NULL
+emmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
+  mult = 100 # have to generate extra data to meet user parameters
+  
+  p = length(beta)
+  
+  # Goals
+  npos = ceiling((1-rho) * zeta * num_cells)
+  nneg = num_cells - npos
+  
+  X = matrix(rnorm(mult * num_cells * p), nrow=mult * num_cells, ncol=p)
+  XX = X
+  # XX[, 1] = XX[, 1] * XX[, 2]
+  # XX[, 3] = XX[, 3]
+  # XX[, 4] = XX[, 4]^2
+  probs = 1/(1 + exp(-XX %*% beta))
+  y = rbinom(mult * num_cells, 1, probs)
+  
+  keep_ix = sample(c(which(y == 1)[1:npos], which(y == 0)[1:nneg]))
+  
+  X = X[keep_ix, ]
+  y = y[keep_ix]
+  z = rep(0, num_cells)
+  z[y == 1] = 1
+  z[y == 0] = rbinom(sum(1-y), 1, rho*zeta/(rho * zeta + (1-zeta)))
+  
+  return(
+    list(
+      X = X,
+      true_y = y,
+      z = z
+    )
+  )
+}
+
+
 
 # model initialization ---------------------------------------------------------
 
