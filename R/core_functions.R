@@ -334,7 +334,7 @@ emmil_fit_glmnet <-
       # maximization step 
       model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
       probabilities <- stats::predict(model, newx = X, s = lambda, type = "response") 
-      predictions <- logit(probabilities) # logit 
+      predictions <- stats::predict(model, newx = X, s = lambda, type = "link")  # logit(probabilities) can cause numerical issues
       lls[i] <- 
         loglik(
           z = z, 
