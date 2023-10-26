@@ -5,8 +5,9 @@ Biomedical datasets often consist of cells sampled from sick and healthy people.
 Here, we show how to use Mixture LASSO, an expectation maximization method to train and calibrate a cell-level classifier using patient-level labels and the assumption that healthy people have no diseased cells. Mixture LASSO is versatile: it can be applied to any classifier that uses the logit link function, and it can be used to perform Platt scaling to calibrate models trained by any method in this missing label setting. 
 
 ## How to install
-The `devtools` package offers a function to install R packages hosted on Github:
-install_github("keyes-timothy/emmil").
+The `devtools` package offers a function to install R packages hosted on Github.
+
+```install_github("keyes-timothy/emmil")```
 
 There are other methods to install R packages from Github, [here](https://cran.r-project.org/web/packages/githubinstall/vignettes/githubinstall.html) is a useful link on this topic.
 
