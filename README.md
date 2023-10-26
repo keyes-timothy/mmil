@@ -29,18 +29,19 @@ optimal.model <- glmnet(data.train$X, data.train$true_y, family = "binomial")
 ```
 
 Without knowing the true cell labels, we can use Mixture LASSO:
-```
-# number of cells sampled from sick people:
-n1 <- sum(data$z) 
 
+```
 # account for any bias in our (finite) sample:
-case.control.adj <- -log((1-rho)*n1/(n_train - (1-rho)*n1))
-case.control.adj <- case.control.adj + log((1-rho)*zeta/(1 - (1-rho)*zeta)) 
+case.control.adj <- emmil_calculate_case_control_adjustment(z = data$z,
+                                                            num_cells = length(data$z),
+                                                            num_cells_diesase = sum(data$z),
+                                                            rho = 0.5,
+                                                            zeta = 0.5)
 
 # train the Mixture LASSO model:
 mixture.model    <- emmil_fit_glmnet(data.train$X, data.train$z, 
-                                  rho = rho,
-                                  zeta = zeta, 
+                                  rho = 0.5,
+                                  zeta = 0.5, 
                                   lambda = 1e-4, # a lambda must be specified
                                   case_control_adjustment = case.control.adj,
                                   num_iterations = 20)
