@@ -346,9 +346,14 @@ emmil_fit_glmnet <-
       # check patience
       if (i > 1) {
         ll_difference <- (lls[i])/num_cells - (lls[i-1])/num_cells
-        if (ll_difference < early_stopping_tolerance) {
-          patience_counter <- patience_counter + 1
-        } else {
+        
+        if (!is.na(ll_difference)) { 
+          if (ll_difference < early_stopping_tolerance) {
+            patience_counter <- patience_counter + 1
+          } else {
+            patience_counter <- 0
+          }
+        } else { 
           patience_counter <- 0
         }
       }
