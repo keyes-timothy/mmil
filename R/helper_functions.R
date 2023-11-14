@@ -6,15 +6,26 @@
 #' 
 #' @param rho The probability that a cell from a diseased sample is not 
 #' disease-associated (i.e. the probability that y = 0 when z = 1).
+#' 
+#' @param true_y Optional. A vector of length length(z) containing the known
+#' labels for each cell. 
 #'
 #' @return A vector of the same length as z representing the initial disease-
 #' association probabilities for each cell in the dataset.
 #' 
 #' @export
 #'
-initialize_y <- function(z, rho){
-  y <- rep(0, length(z))
-  y[z == 1] <- 1 - rho
+initialize_y <- function(z, rho, true_y = NULL){
+  
+  if(is.null(true_y)) { 
+    y <- rep(0, length(z))
+    y[z == 1] <- 1 - rho
+    
+  } else { 
+    y <- true_y 
+    y[is.na(y) & z == 0] <- 0
+    y[is.na(y) & z == 1] <- 1 - rho
+  }
   return(y)
 }
 
@@ -59,17 +70,29 @@ logit <- function(p) {
 #' @param rho The probability that a cell from a diseased sample is not 
 #' disease-associated (i.e. the probability that y = 0 when z = 1). 
 #' @param zeta The probability that the inherited patient label of any given cell will be 1. 
+#' @param true_y Optional. A numeric vector of length length(z) containing the known
+#' labels for each cell. 
 #'
 #' @return A numeric vector of updated probabilities that each cell is disease-associated.
 #'
-update_y <- function(predictions, z, rho, zeta) {
+update_y <- function(predictions, z, rho, zeta, true_y = NULL) {
   # adjustment for cells sampled from from people with the disease
   intercept_adjustment <- 
     emmil_calculate_sample_label_adjustment(rho = rho, zeta = zeta)
   
-  y <- rep(0, length(z))
-  adjusted_logits <- predictions[z == 1] + intercept_adjustment
-  y[z == 1] <- p_from_logit(adjusted_logits)
+  # update y
+  if(is.null(true_y)) { 
+    y <- rep(0, length(z))
+    adjusted_logits <- predictions[z == 1] + intercept_adjustment
+    y[z == 1] <- p_from_logit(adjusted_logits)
+    
+  } else { 
+    y <- true_y 
+    adjusted_logits <- predictions[is.na(y) & z == 1] + intercept_adjustment
+    y[is.na(y) & z == 0] <- 0
+    y[is.na(y) & z == 1] <- p_from_logit(adjusted_logits)
+  }
+  
   return(y)
 }
 

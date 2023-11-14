@@ -380,6 +380,152 @@ emmil_fit_glmnet <-
   }
 
 
+#' Fit an MMIL model using glmnet with the option for sick samples to have cell-level labels.
+#'
+#' This function is a part of the high-level API for emmil. It fits an EMMIL model
+#' using `glmnet` to make instance label predictions at each iteration.
+#'
+#' @param X The numeric feature matrix of single-cell data. Each row is a cell, and each
+#' column is a feature.
+#'
+#' @param z A numeric vector of inherited patient labels for each cell. 1 if the
+#' cell was sampled from a patient with the disease and 0 otherwise.
+#' 
+#' @param true_y A numeric vector of true labels for each cell (if known). Should 
+#' be 1 if a cell is disease-associated, 0 if the cell is not disease-associated, and 
+#' NA otherwise. By default, all entries in true_y for cells for which z == 0 will
+#' be set to 0, and all other values will be NA. 
+#'
+#' @param rho A scalar value between 0 and 1 indicating the probability that
+#' that a cell is NOT associated with the outcome-of-interest, given that the
+#' cell was sampled from a patient who DOES have the outcome of interest. In other
+#' words, the expected number of non-disease-associated cells in each sick patient.
+#'
+#' @param zeta A scalar value between 0 and 1 indicating the marginal probability that an
+#' inherited patient label will be 1. In other words, the probability
+#' that a random cell from your population-of-interest will be sampled from a patient with
+#' the condition-of-interest.
+#'
+#' @param lambda A non-negative scalar value representing the total amount of
+#' regularization for the `glmnet` model. Sometimes called the "penalty" parameter
+#' for a LASSO or elastic net model.
+#'
+#' @param case_control_adjustment The intercept adjustment to account for biased sampling.
+#'
+#' @param num_iterations An integer indicating the maximum
+#' number of iterations to use when fitting the model.
+#'
+#' @param alpha A number between 0 and 1 indicating the proportion of L1 regularization
+#' and L2 regularization in the model. A value of 1 (the default) indicates a pure
+#' LASSO model, whereas a value of 0 indicates a pure ridge regression model. Any
+#' values inbetween indicate an elastic net model.
+#'
+#' @param early_stopping_patience An integer number of iterations for which the improvement
+#' in the log-likelihood must be lower than `early_stopping_tolerance` in a row before
+#' model training is stopped. Defaults to 3. Must be larger than 0.
+#'
+#' @param early_stopping_tolerance A scalar value indicating the minimum value by which the
+#' training log-likelihood must improve to continue training. If the improvement in the
+#' log-likelihood is smaller than this value for `early_stopping_patience` iterations
+#' in a row, model training will be stopped before `num_iterations` iterations are fit.
+#' Defaults to 1e-4. This value is for the normalized log-likelihood (i.e. divided by number of cells in the training set).
+#'
+#' @return An emmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
+#'
+#' @export
+#'
+#' @importFrom glmnet glmnet
+#'
+#' @examples
+#' NULL
+#'
+emmil_fit_glmnet_experimental <-
+  function(
+    X,
+    z,
+    true_y = NULL, 
+    rho,
+    zeta,
+    lambda,
+    alpha = 1,
+    case_control_adjustment = 0,
+    num_iterations = 20L,
+    early_stopping_patience = 3L,
+    early_stopping_tolerance = 1e-4
+  ) {
+    
+    if (early_stopping_patience < 1) {
+      stop("early_stopping_patience must be 1 or larger.")
+    }
+    
+    # initialize model
+    y <- initialize_y(z = z, rho = rho, true_y = true_y)
+    y_list <- rep(list(y), num_iterations)
+    lls <- rep(0, num_iterations)
+    num_cells <- length(z)
+    num_cells_disease <- sum(z)
+    patience_counter <- 0
+    
+    # iterate EM steps
+    for (i in 1:num_iterations) {
+      
+      # break if patience has been exhausted
+      if (patience_counter >= early_stopping_patience) {
+        lls <- lls[1:i-1]
+        break
+      }
+      
+      # maximization step
+      model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
+      probabilities <- stats::predict(model, newx = X, s = lambda, type = "response")
+      predictions <- stats::predict(model, newx = X, s = lambda, type = "link")  # logit(probabilities) can cause numerical issues
+      lls[i] <-
+        loglik(
+          z = z,
+          predictions = predictions,
+          rho = rho,
+          num_cells_disease = num_cells_disease,
+          num_cells = num_cells
+        )
+      
+      # check patience
+      if (i > 1) {
+        ll_difference <- (lls[i])/num_cells - (lls[i-1])/num_cells
+        
+        if (!is.na(ll_difference)) { 
+          if (ll_difference < early_stopping_tolerance) {
+            patience_counter <- patience_counter + 1
+          } else {
+            patience_counter <- 0
+          }
+        } else { 
+          patience_counter <- 0
+        }
+      }
+      
+      # expectation step
+      adjusted_predictions <- predictions + case_control_adjustment
+      y <- update_y(adjusted_predictions, z, rho, zeta, true_y = true_y) # check to make sure true_y works
+      y_list[i] <- list(y)
+    }
+    
+    # return result
+    result <-
+      new_emmil_model(
+        model = model,
+        rho = rho,
+        zeta = zeta,
+        num_cells = num_cells,
+        num_cells_disease = num_cells_disease,
+        lls = lls,
+        hyperparamters <- list(lambda = lambda, alpha = alpha)
+      )
+    
+    return(result)
+  }
+
+
+
 
 #' Fit an EMMIL model using a generalized linear model.
 #'
