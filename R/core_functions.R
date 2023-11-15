@@ -86,6 +86,9 @@ emmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, z
 #' the outcome-of-interest (1) or not (0)).
 #'
 #' @export
+#' 
+#' @importFrom stats rbinom
+#' @importFrom stats rnorm
 #'
 #' @examples
 #' NULL
@@ -98,13 +101,13 @@ emmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
   npos = ceiling((1-rho) * zeta * num_cells)
   nneg = num_cells - npos
   
-  X = matrix(rnorm(mult * num_cells * p), nrow=mult * num_cells, ncol=p)
+  X = matrix(stats::rnorm(mult * num_cells * p), nrow=mult * num_cells, ncol=p)
   XX = X
   # XX[, 1] = XX[, 1] * XX[, 2]
   # XX[, 3] = XX[, 3]
   # XX[, 4] = XX[, 4]^2
   probs = 1/(1 + exp(-XX %*% beta))
-  y = rbinom(mult * num_cells, 1, probs)
+  y = stats::rbinom(mult * num_cells, 1, probs)
   
   keep_ix = sample(c(which(y == 1)[1:npos], which(y == 0)[1:nneg]))
   
@@ -112,7 +115,7 @@ emmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
   y = y[keep_ix]
   z = rep(0, num_cells)
   z[y == 1] = 1
-  z[y == 0] = rbinom(sum(1-y), 1, rho*zeta/(rho * zeta + (1-zeta)))
+  z[y == 0] = stats::rbinom(sum(1-y), 1, rho*zeta/(rho * zeta + (1-zeta)))
   
   return(
     list(
@@ -285,6 +288,13 @@ emmil_calculate_sample_label_adjustment <- function(rho, zeta) {
 #' log-likelihood is smaller than this value for `early_stopping_patience` iterations
 #' in a row, model training will be stopped before `num_iterations` iterations are fit.
 #' Defaults to 1e-4. This value is for the normalized log-likelihood (i.e. divided by number of cells in the training set).
+#' 
+#' @param fit_entire_glmnet_path A boolean value indicating if the entire glmnet 
+#' lambda path should be fit, or if only the model with this function's `lambda` 
+#' should be fit. Note that the glmnet authors do not recommend fitting a glmnet
+#' model for a single value of lambda, but sometimes doing so can provide a 
+#' substantial speedup. Defaults to TRUE (fitting the entire glmnet path); set to 
+#' FALSE to throw caution to the wind. 
 #'
 #' @return An emmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
 #'
@@ -306,7 +316,8 @@ emmil_fit_glmnet <-
     case_control_adjustment = 0,
     num_iterations = 20L,
     early_stopping_patience = 3L,
-    early_stopping_tolerance = 1e-4
+    early_stopping_tolerance = 1e-4, 
+    fit_entire_glmnet_path = TRUE
   ) {
     
     if (early_stopping_patience < 1) {
@@ -331,7 +342,18 @@ emmil_fit_glmnet <-
       }
       
       # maximization step
-      model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
+      if (fit_entire_glmnet_path) {
+        model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
+      } else { 
+        model <- 
+          glmnet::glmnet(
+            x = X, 
+            y = cbind(1 - y, y), 
+            alpha = alpha, 
+            lambda = lambda, 
+            family = "binomial"
+          )
+      }
       probabilities <- stats::predict(model, newx = X, s = lambda, type = "response")
       predictions <- stats::predict(model, newx = X, s = lambda, type = "link")  # logit(probabilities) can cause numerical issues
       lls[i] <-
@@ -429,6 +451,13 @@ emmil_fit_glmnet <-
 #' log-likelihood is smaller than this value for `early_stopping_patience` iterations
 #' in a row, model training will be stopped before `num_iterations` iterations are fit.
 #' Defaults to 1e-4. This value is for the normalized log-likelihood (i.e. divided by number of cells in the training set).
+#' 
+#' @param fit_entire_glmnet_path A boolean value indicating if the entire glmnet 
+#' lambda path should be fit, or if only the model with this function's `lambda` 
+#' should be fit. Note that the glmnet authors do not recommend fitting a glmnet
+#' model for a single value of lambda, but sometimes doing so can provide a 
+#' substantial speedup. Defaults to TRUE (fitting the entire glmnet path); set to 
+#' FALSE to throw caution to the wind. 
 #'
 #' @return An emmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
 #'
@@ -451,7 +480,8 @@ emmil_fit_glmnet_experimental <-
     case_control_adjustment = 0,
     num_iterations = 20L,
     early_stopping_patience = 3L,
-    early_stopping_tolerance = 1e-4
+    early_stopping_tolerance = 1e-4, 
+    fit_entire_glmnet_path = TRUE
   ) {
     
     if (early_stopping_patience < 1) {
@@ -476,7 +506,18 @@ emmil_fit_glmnet_experimental <-
       }
       
       # maximization step
-      model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
+      if (fit_entire_glmnet_path) {
+        model <- glmnet::glmnet(x = X, y = cbind(1 - y, y), alpha = alpha, family = "binomial")
+      } else { 
+        model <- 
+          glmnet::glmnet(
+            x = X, 
+            y = cbind(1 - y, y), 
+            alpha = alpha, 
+            lambda = lambda, 
+            family = "binomial"
+          )
+      }
       probabilities <- stats::predict(model, newx = X, s = lambda, type = "response")
       predictions <- stats::predict(model, newx = X, s = lambda, type = "link")  # logit(probabilities) can cause numerical issues
       lls[i] <-

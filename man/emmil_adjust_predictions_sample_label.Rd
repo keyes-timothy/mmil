@@ -14,34 +14,34 @@ emmil_adjust_predictions_sample_label(
 )
 }
 \arguments{
-\item{base_predictions}{Unadjusted predictions (either logit or probability values) 
+\item{base_predictions}{Unadjusted predictions (either logit or probability values)
 from an EMMIL model.}
 
-\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
+\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{rho}{A scalar value between 0 and 1 indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be sampled from a patient with 
+\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an
+inherited patient label will be 1. In other words, the probability
+that a random cell from your population-of-interest will be sampled from a patient with
 the condition-of-interest.}
 
-\item{adjust_healthy_samples}{A boolean value indicating if all cells from healthy 
-patients should have their predicted disease-association probability set to 0. 
+\item{adjust_healthy_samples}{A boolean value indicating if all cells from healthy
+patients should have their predicted disease-association probability set to 0.
 Defaults to TRUE.}
 
-\item{prediction_type}{A string indicating how to interpret `base_predictions`. 
-Valid options are "logit" (the default), which interprets `base_predictions` as a 
-vector of logit values, and "prob", which interprets `base_predictions` as a 
-vector of probability values. Note that `prediction_type` also specifies the 
+\item{prediction_type}{A string indicating how to interpret `base_predictions`.
+Valid options are "logit" (the default), which interprets `base_predictions` as a
+vector of logit values, and "prob", which interprets `base_predictions` as a
+vector of probability values. Note that `prediction_type` also specifies the
 output of this function (either adjusted logit or probability scores, respectively).}
 }
 \value{
-If `prediction_type` == "logit", a vector of adjusted logit values. If 
+If `prediction_type` == "logit", a vector of adjusted logit values. If
 `prediction_type` == "prob", a vector of adjusted probability values.
 }
 \description{

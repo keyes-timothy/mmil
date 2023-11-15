@@ -5,7 +5,7 @@
 \title{After a maximization step is computed by the EMMIL algorithm, update the
 y-values (disease-association probabilities) for each cell in the next iteration}
 \usage{
-update_y(predictions, z, rho, zeta)
+update_y(predictions, z, rho, zeta, true_y = NULL)
 }
 \arguments{
 \item{predictions}{The (logit) model predictions from the maximization step}
@@ -16,6 +16,9 @@ update_y(predictions, z, rho, zeta)
 disease-associated (i.e. the probability that y = 0 when z = 1).}
 
 \item{zeta}{The probability that the inherited patient label of any given cell will be 1.}
+
+\item{true_y}{Optional. A numeric vector of length length(z) containing the known
+labels for each cell.}
 }
 \value{
 A numeric vector of updated probabilities that each cell is disease-associated.

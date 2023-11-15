@@ -19,20 +19,20 @@ emmil_fit_mlp(
 )
 }
 \arguments{
-\item{X}{The numeric feature matrix of single-cell data. Each row is a cell, and each 
+\item{X}{The numeric feature matrix of single-cell data. Each row is a cell, and each
 column is a feature.}
 
-\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
+\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{rho}{A scalar value between 0 and 1 indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be from a patient with 
+\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an
+inherited patient label will be 1. In other words, the probability
+that a random cell from your population-of-interest will be from a patient with
 the condition-of-interest.}
 
 \item{case_control_adjustment}{TO DO}
@@ -45,15 +45,14 @@ number of iterations to use when fitting the model.}
 \item{decay}{TO DO}
 
 \item{early_stopping_patience}{An integer number of iterations for which the improvement
-in the log-likelihood must be lower than `early_stopping_tolerance` in a row before 
+in the log-likelihood must be lower than `early_stopping_tolerance` in a row before
 model training is stopped. Defaults to 3. Must be larger than 0.}
 
 \item{early_stopping_tolerance}{A scalar value indicating the minimum value by which the
-training log-likelihood must improve to continue training. If the improvement in the 
-log-likelihood is smaller than this value for `early_stopping_patience` iterations 
+training log-likelihood must improve to continue training. If the improvement in the
+log-likelihood is smaller than this value for `early_stopping_patience` iterations
 in a row, model training will be stopped before `num_iterations` iterations are fit.
-Defaults to 1e-4. TODO: ERIN or TIM - Do we indicate that this value is for the 
-normalized (i.e. divided by number of cells in the training set) log-likelihood?}
+Defaults to 1e-4. This value is for the normalized log-likelihood (i.e. divided by number of cells in the training set).}
 
 \item{...}{TO DO}
 }

@@ -9,7 +9,7 @@ emmil_plot_lls(emmil_model_object, lls, theme = ggplot2::theme_bw(), ...)
 \arguments{
 \item{emmil_model_object}{An EMMIL model fit using the high-level API.}
 
-\item{lls}{A numeric vector of log-likelihood values. Will be ignored if 
+\item{lls}{A numeric vector of log-likelihood values. Will be ignored if
 emmil_model_object is provided.}
 
 \item{theme}{A ggplot2 theme. Defaults to ggplot2::theme_bw().}

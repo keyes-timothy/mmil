@@ -14,56 +14,63 @@ emmil_fit_glmnet(
   case_control_adjustment = 0,
   num_iterations = 20L,
   early_stopping_patience = 3L,
-  early_stopping_tolerance = 1e-04
+  early_stopping_tolerance = 1e-04,
+  fit_entire_glmnet_path = TRUE
 )
 }
 \arguments{
-\item{X}{The numeric feature matrix of single-cell data. Each row is a cell, and each 
+\item{X}{The numeric feature matrix of single-cell data. Each row is a cell, and each
 column is a feature.}
 
-\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
+\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{rho}{A scalar value between 0 and 1 indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be sampled from a patient with 
+\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an
+inherited patient label will be 1. In other words, the probability
+that a random cell from your population-of-interest will be sampled from a patient with
 the condition-of-interest.}
 
-\item{lambda}{A non-negative scalar value representing the total amount of 
-regularization for the `glmnet` model. Sometimes called the "penalty" parameter 
+\item{lambda}{A non-negative scalar value representing the total amount of
+regularization for the `glmnet` model. Sometimes called the "penalty" parameter
 for a LASSO or elastic net model.}
 
 \item{alpha}{A number between 0 and 1 indicating the proportion of L1 regularization
-and L2 regularization in the model. A value of 1 (the default) indicates a pure 
-LASSO model, whereas a value of 0 indicates a pure ridge regression model. Any 
+and L2 regularization in the model. A value of 1 (the default) indicates a pure
+LASSO model, whereas a value of 0 indicates a pure ridge regression model. Any
 values inbetween indicate an elastic net model.}
 
-\item{case_control_adjustment}{TODO}
+\item{case_control_adjustment}{The intercept adjustment to account for biased sampling.}
 
 \item{num_iterations}{An integer indicating the maximum
 number of iterations to use when fitting the model.}
 
 \item{early_stopping_patience}{An integer number of iterations for which the improvement
-in the log-likelihood must be lower than `early_stopping_tolerance` in a row before 
+in the log-likelihood must be lower than `early_stopping_tolerance` in a row before
 model training is stopped. Defaults to 3. Must be larger than 0.}
 
 \item{early_stopping_tolerance}{A scalar value indicating the minimum value by which the
-training log-likelihood must improve to continue training. If the improvement in the 
-log-likelihood is smaller than this value for `early_stopping_patience` iterations 
+training log-likelihood must improve to continue training. If the improvement in the
+log-likelihood is smaller than this value for `early_stopping_patience` iterations
 in a row, model training will be stopped before `num_iterations` iterations are fit.
-Defaults to 1e-4. TODO: ERIN or TIM - Do we indicate that this value is for the 
-normalized (i.e. divided by number of cells in the training set) log-likelihood?}
+Defaults to 1e-4. This value is for the normalized log-likelihood (i.e. divided by number of cells in the training set).}
+
+\item{fit_entire_glmnet_path}{A boolean value indicating if the entire glmnet 
+lambda path should be fit, or if only the model with this function's `lambda` 
+should be fit. Note that the glmnet authors do not recommend fitting a glmnet
+model for a single value of lambda, but sometimes doing so can provide a 
+substantial speedup. Defaults to TRUE (fitting the entire glmnet path); set to 
+FALSE to throw caution to the wind.}
 }
 \value{
 An emmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
 }
 \description{
-This function is a part of the high-level API for emmil. It fits an EMMIL model 
+This function is a part of the high-level API for emmil. It fits an EMMIL model
 using `glmnet` to make instance label predictions at each iteration.
 }
 \examples{

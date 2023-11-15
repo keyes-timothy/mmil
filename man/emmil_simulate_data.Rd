@@ -17,34 +17,34 @@ emmil_simulate_data(
 
 \item{num_features}{An integer number of features to simulate}
 
-\item{rho}{A scalar value between 0 and 1 indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. This is the probability 
+\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an
+inherited patient label will be 1. This is the probability
 that a random person from your population-of-interest will have the condition-of-interest.}
 
-\item{shift}{An integer indicating the magnitude of the shift applied to cells 
-whose ground truth labels are y = 1. The value of shift is added to the first 
-`round(num_features / 2)` values of the feature vectors for all cells whose 
+\item{shift}{An integer indicating the magnitude of the shift applied to cells
+whose ground truth labels are y = 1. The value of shift is added to the first
+`round(num_features / 2)` values of the feature vectors for all cells whose
 ground truth label is 1.}
 }
 \value{
-A list with 3 items: X (the expression matrix), z (an integer 
-vector of inherited patient labels for each cell) and true_y (an integer vector 
+A list with 3 items: X (the expression matrix), z (an integer
+vector of inherited patient labels for each cell) and true_y (an integer vector
 indicating the "true" answer for whether or not a cell is associated with
 the outcome-of-interest (1) or not (0)).
 }
 \description{
-This function simulates a rectangular expression matrix (X), an integer 
+This function simulates a rectangular expression matrix (X), an integer
 vector of observed, inherited patient labels (z) and an integer vector of
-unobserved, ground truth cell labels (y) for an imaginary dataset. The 
-expression matrix X is built such that each row represents a cell and each 
-column represents a biological feature (i.e. gene or protein expression). All 
-values in X are drawn from a normal Gaussian distribution, and expression vectors of 
-cells for which y = 1 are shifted from those of cells for which y = 0 
+unobserved, ground truth cell labels (y) for an imaginary dataset. The
+expression matrix X is built such that each row represents a cell and each
+column represents a biological feature (i.e. gene or protein expression). All
+values in X are drawn from a normal Gaussian distribution, and expression vectors of
+cells for which y = 1 are shifted from those of cells for which y = 0
 using a user-specified numeric value.
 }
 \examples{

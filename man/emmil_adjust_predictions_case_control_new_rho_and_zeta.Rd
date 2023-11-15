@@ -2,7 +2,7 @@
 % Please edit documentation in R/core_functions.R
 \name{emmil_adjust_predictions_case_control_new_rho_and_zeta}
 \alias{emmil_adjust_predictions_case_control_new_rho_and_zeta}
-\title{Update the predictions of an EMMIL model using the case-control (i.e. sampling 
+\title{Update the predictions of an EMMIL model using the case-control (i.e. sampling
 bias) adjustment when a model was trained on a distribution with one set of rho
 and zeta values, but applied to a distribution with a new set of rho and zeta values.}
 \usage{
@@ -17,49 +17,49 @@ emmil_adjust_predictions_case_control_new_rho_and_zeta(
 )
 }
 \arguments{
-\item{base_predictions}{Unadjusted predictions (either logit or probability values) 
+\item{base_predictions}{Unadjusted predictions (either logit or probability values)
 from an EMMIL model.}
 
-\item{training_z}{A numeric vector of inherited patient labels for each cell 
-from the dataset on which the model was originally trained. 1 if the 
+\item{training_z}{A numeric vector of inherited patient labels for each cell
+from the dataset on which the model was originally trained. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{training_rho}{A scalar value between 0 and 1 for the dataset on which the 
-original model was trained indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{training_rho}{A scalar value between 0 and 1 for the dataset on which the
+original model was trained indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{training_zeta}{A scalar value between 0 and 1 for the dataset on which the 
-original model was trained indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be sampled from a patient with 
+\item{training_zeta}{A scalar value between 0 and 1 for the dataset on which the
+original model was trained indicating the marginal probability that an
+inherited patient label will be 1. In other words, the probability
+that a random cell from your population-of-interest will be sampled from a patient with
 the condition-of-interest.}
 
-\item{test_rho}{A scalar value between 0 and 1 for the new dataset for which 
-the model was used to make predictions indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{test_rho}{A scalar value between 0 and 1 for the new dataset for which
+the model was used to make predictions indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{test_zeta}{A scalar value between 0 and 1 for the new dataset for which 
-the model was used to make predictions indicating the marginal probability that an 
-inherited patient label will be 1. In other words, the probability 
-that a random cell from your population-of-interest will be sampled from a patient with 
+\item{test_zeta}{A scalar value between 0 and 1 for the new dataset for which
+the model was used to make predictions indicating the marginal probability that an
+inherited patient label will be 1. In other words, the probability
+that a random cell from your population-of-interest will be sampled from a patient with
 the condition-of-interest.}
 
-\item{prediction_type}{A string indicating how to interpret `base_predictions`. 
-Valid options are "logit" (the default), which interprets `base_predictions` as a 
-vector of logit values, and "prob", which interprets `base_predictions` as a 
-vector of probability values. Note that `prediction_type` also specifies the 
+\item{prediction_type}{A string indicating how to interpret `base_predictions`.
+Valid options are "logit" (the default), which interprets `base_predictions` as a
+vector of logit values, and "prob", which interprets `base_predictions` as a
+vector of probability values. Note that `prediction_type` also specifies the
 output of this function (either adjusted logit or probability scores, respectively).}
 }
 \value{
-If `prediction_type` == "logit", a vector of adjusted logit values. If 
+If `prediction_type` == "logit", a vector of adjusted logit values. If
 `prediction_type` == "prob", a vector of adjusted probability values.
 }
 \description{
-Update the predictions of an EMMIL model using the case-control (i.e. sampling 
+Update the predictions of an EMMIL model using the case-control (i.e. sampling
 bias) adjustment when a model was trained on a distribution with one set of rho
 and zeta values, but applied to a distribution with a new set of rho and zeta values.
 }

@@ -4,13 +4,16 @@
 \alias{initialize_y}
 \title{A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.}
 \usage{
-initialize_y(z, rho)
+initialize_y(z, rho, true_y = NULL)
 }
 \arguments{
 \item{z}{The vector of inherited parent labels for each cell.}
 
 \item{rho}{The probability that a cell from a diseased sample is not 
 disease-associated (i.e. the probability that y = 0 when z = 1).}
+
+\item{true_y}{Optional. A vector of length length(z) containing the known
+labels for each cell.}
 }
 \value{
 A vector of the same length as z representing the initial disease-

@@ -7,12 +7,12 @@
 emmil_initialize_y(z, rho)
 }
 \arguments{
-\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
+\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{rho}{A scalar value between 0 and 1 indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease associated cells in each sick patient.}
 }
 \value{
@@ -20,9 +20,9 @@ A numeric vector of the same length as z representing the initial disease-
 association probabilities for each cell in the dataset.
 }
 \description{
-This function initializes the first vector of cell-level label predictions 
-in an EMMIL model. All values of the vector will be between 0 and 1. 
-Specifically, all entries for cells for which z = 0 (cells from samples without 
-the condition-of-interest) will be 0, and entries for cells for which z = 1 
+This function initializes the first vector of cell-level label predictions
+in an EMMIL model. All values of the vector will be between 0 and 1.
+Specifically, all entries for cells for which z = 0 (cells from samples without
+the condition-of-interest) will be 0, and entries for cells for which z = 1
 (cells from samples with the condition-of-interest) will be 1 - `rho`.
 }

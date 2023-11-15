@@ -13,33 +13,33 @@ emmil_calculate_case_control_adjustment(
 )
 }
 \arguments{
-\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the 
+\item{z}{A numeric vector of inherited patient labels for each cell. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
 
-\item{num_cells}{An integer representing the total number of cells in the 
+\item{num_cells}{An integer representing the total number of cells in the
 dataset. Only used if z is missing (otherwise, `length(z)` is used). TODO: Remove}
 
-\item{num_cells_disease}{An integer representing the number of cells in the 
-dataset from samples with the condition- or disease-of-interest. 
+\item{num_cells_disease}{An integer representing the number of cells in the
+dataset from samples with the condition- or disease-of-interest.
 Only used if z is missing (otherwise, `sum(z)` is used). TODO: Remove}
 
-\item{rho}{A scalar value between 0 and 1 indicating the probability that 
-that a cell is NOT associated with the outcome-of-interest, given that the 
-cell was sampled from a patient who DOES have the outcome of interest. In other 
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
 words, the expected number of non-disease associated cells in each sick patient.}
 
-\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an 
-inherited patient label will be 1. This is the probability 
-that a random cell from your population-of-interest will be sampled from a 
+\item{zeta}{A scalar value between 0 and 1 indicating the marginal probability that an
+inherited patient label will be 1. This is the probability
+that a random cell from your population-of-interest will be sampled from a
 person who has the condition-of-interest.}
 }
 \value{
-A scalar value indicating the case control adjustment that must be 
+A scalar value indicating the case control adjustment that must be
 added to our logit to adjust the intercept of our model.
 }
 \description{
-This function calculates the case-control adjustment used during EMMIL 
-modeling fitting. In brief, this adjustment ____. TODO. ERIN
+This function calculates the case-control adjustment used during EMMIL
+modeling fitting. In brief, this adjustment addresses settings where data are sampled in a biased way (intentionally or otherwise).
 }
 \examples{
 NULL
