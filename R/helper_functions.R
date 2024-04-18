@@ -1,4 +1,4 @@
-# EMMIL helper functions
+# MMIL helper functions
 
 #' A function that initializes y_0 (the y vector for the 0th iteration) for the EM-MIL algorithm.
 #'
@@ -62,7 +62,7 @@ logit <- function(p) {
   return(log(p / (1 - p)))
 }
 
-#' After a maximization step is computed by the EMMIL algorithm, update the
+#' After a maximization step is computed by the MMIL algorithm, update the
 #' y-values (disease-association probabilities) for each cell in the next iteration 
 #'
 #' @param predictions The (logit) model predictions from the maximization step
@@ -78,7 +78,7 @@ logit <- function(p) {
 update_y <- function(predictions, z, rho, zeta, true_y = NULL) {
   # adjustment for cells sampled from from people with the disease
   intercept_adjustment <- 
-    emmil_calculate_sample_label_adjustment(rho = rho, zeta = zeta)
+    mmil_calculate_sample_label_adjustment(rho = rho, zeta = zeta)
   
   # update y
   if(is.null(true_y)) { 
@@ -114,7 +114,7 @@ update_y <- function(predictions, z, rho, zeta, true_y = NULL) {
 #' 
 #' @export
 #'
-emmil_loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
+mmil_loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
   ll <- 0
   ll <- 
     ll + 
@@ -132,4 +132,4 @@ emmil_loglik <- function(z, predictions, rho, num_cells_disease, num_cells) {
 }
 
 # alias
-loglik <- emmil_loglik
+loglik <- mmil_loglik

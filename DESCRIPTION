@@ -1,11 +1,24 @@
-Package: emmil
+Package: mmil
 Type: Package
-Title: Expectation-Maximization for Mixture-based Instance Labeling
+Title: Mixture models for Multiple Instance Learning
 Version: 0.1.0
-Author: Timothy Keyes & Erin Craig
+Authors@R: 
+    c(person(given = "Timothy",
+             family = "Keyes",
+             role = c("cre"),
+             email = "tkeyes@stanford.edu", 
+             comment = c(ORCID = "0000-0003-0423-9679")),
+      person(given = "Erin", 
+             family = "Craig", 
+             role = c("rth"),
+             email = "erincr@stanford.edu"), 
+      person(given = "Robert", 
+             family = "Tibshirani", 
+             role = c("rth", "own"), 
+             email = "tibs@stanford.edu"))
 Maintainer: Timothy Keyes <tkeyes@stanford.edu>
 Description: 
-    This package implements the Mixture Lasso algorithm described in XXXXXXXXX. 
+    This package implements the MMIL algorithm described in XXXXXXXXX. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -18,7 +31,7 @@ Suggests:
     tibble,
     tidyr
 VignetteBuilder: knitr
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Imports: 
     ggplot2,
     glmnet,

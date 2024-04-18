@@ -1,11 +1,11 @@
 # core_functions.R
 #
 # This script contains functions for initializing, training, and visualizing
-# EMMIL models.
+# MMIL models.
 
 # simulate data ----------------------------------------------------------------
 
-#' Simulate data to demonstrate how to use the EMMIL model.
+#' Simulate data to demonstrate how to use the MMIL model.
 #'
 #' This function simulates a rectangular expression matrix (X), an integer
 #' vector of observed, inherited patient labels (z) and an integer vector of
@@ -43,7 +43,7 @@
 #'
 #' @examples
 #' NULL
-emmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, zeta = 0.5, shift = 4) {
+mmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, zeta = 0.5, shift = 4) {
   
   # simulate feature matrix and inherited patient labels for each cell
   X <-
@@ -92,7 +92,7 @@ emmil_simulate_data <- function(num_cells = 100, num_features = 10, rho = 0.5, z
 #'
 #' @examples
 #' NULL
-emmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
+mmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
   mult = 100 # have to generate extra data to meet user parameters
   
   p = length(beta)
@@ -130,10 +130,10 @@ emmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
 
 # model initialization ---------------------------------------------------------
 
-#' A function that initializes y_0 (the y vector for the 0th iteration) for the EMMIL algorithm.
+#' A function that initializes y_0 (the y vector for the 0th iteration) for the MMIL algorithm.
 #'
 #' This function initializes the first vector of cell-level label predictions
-#' in an EMMIL model. All values of the vector will be between 0 and 1.
+#' in an MMIL model. All values of the vector will be between 0 and 1.
 #' Specifically, all entries for cells for which z = 0 (cells from samples without
 #' the condition-of-interest) will be 0, and entries for cells for which z = 1
 #' (cells from samples with the condition-of-interest) will be 1 - `rho`.
@@ -151,16 +151,16 @@ emmil_simulate_data_with_beta <- function(num_cells, beta, rho, zeta){
 #'
 #' @export
 #'
-emmil_initialize_y <- function(z, rho){
+mmil_initialize_y <- function(z, rho){
   y <- rep(0, length(z))
   y[z == 1] <- 1 - rho
   return(y)
 }
 
 
-#' Calculate the case-control adjustment in an EMMIL model.
+#' Calculate the case-control adjustment in an MMIL model.
 #'
-#' This function calculates the case-control adjustment used during EMMIL
+#' This function calculates the case-control adjustment used during MMIL
 #' modeling fitting. In brief, this adjustment addresses settings where data are sampled in a biased way (intentionally or otherwise).
 #'
 #' @param z A numeric vector of inherited patient labels for each cell. 1 if the
@@ -191,7 +191,7 @@ emmil_initialize_y <- function(z, rho){
 #' @examples
 #' NULL
 #'
-emmil_calculate_case_control_adjustment <-
+mmil_calculate_case_control_adjustment <-
   function(z, num_cells, num_cells_disease, rho, zeta) {
     # if (!missing(z)) {
       num_cells <- length(z)
@@ -209,9 +209,9 @@ emmil_calculate_case_control_adjustment <-
     return(case_control_intercept_adjustment)
   }
 
-#' Calculate the sample-label adjustment in an EMMIL model.
+#' Calculate the sample-label adjustment in an MMIL model.
 #'
-#' This function calculates the sample-label adjustment used during EMMIL
+#' This function calculates the sample-label adjustment used during MMIL
 #' modeling fitting and prediction. In brief, this adjustment adjusts the probability
 #' scores for cells sampled from sick patients (i.e. those for whom z = 1), for whom
 #' we expect a higher degree of disease-association.
@@ -234,7 +234,7 @@ emmil_calculate_case_control_adjustment <-
 #' @examples
 #' NULL
 #'
-emmil_calculate_sample_label_adjustment <- function(rho, zeta) {
+mmil_calculate_sample_label_adjustment <- function(rho, zeta) {
   intercept_adjustment <- -log(rho * zeta/(1 - (1-rho) * zeta))
   
   return(intercept_adjustment)
@@ -244,9 +244,9 @@ emmil_calculate_sample_label_adjustment <- function(rho, zeta) {
 
 # fit models -------------------------------------------------------------------
 
-#' Fit an EMMIL model using glmnet.
+#' Fit an MMIL model using glmnet.
 #'
-#' This function is a part of the high-level API for emmil. It fits an EMMIL model
+#' This function is a part of the high-level API for mmil. It fits an MMIL model
 #' using `glmnet` to make instance label predictions at each iteration.
 #'
 #' @param X The numeric feature matrix of single-cell data. Each row is a cell, and each
@@ -296,7 +296,7 @@ emmil_calculate_sample_label_adjustment <- function(rho, zeta) {
 #' substantial speedup. Defaults to TRUE (fitting the entire glmnet path); set to 
 #' FALSE to throw caution to the wind. 
 #'
-#' @return An emmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
+#' @return An mmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
 #'
 #' @export
 #'
@@ -305,7 +305,7 @@ emmil_calculate_sample_label_adjustment <- function(rho, zeta) {
 #' @examples
 #' NULL
 #'
-emmil_fit_glmnet <-
+mmil_fit_glmnet_deprecated <-
   function(
     X,
     z,
@@ -388,7 +388,7 @@ emmil_fit_glmnet <-
     
     # return result
     result <-
-      new_emmil_model(
+      new_mmil_model(
         model = model,
         rho = rho,
         zeta = zeta,
@@ -404,7 +404,7 @@ emmil_fit_glmnet <-
 
 #' Fit an MMIL model using glmnet with the option for sick samples to have cell-level labels.
 #'
-#' This function is a part of the high-level API for emmil. It fits an EMMIL model
+#' This function is a part of the high-level API for mmil. It fits an MMIL model
 #' using `glmnet` to make instance label predictions at each iteration.
 #'
 #' @param X The numeric feature matrix of single-cell data. Each row is a cell, and each
@@ -459,7 +459,7 @@ emmil_fit_glmnet <-
 #' substantial speedup. Defaults to TRUE (fitting the entire glmnet path); set to 
 #' FALSE to throw caution to the wind. 
 #'
-#' @return An emmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
+#' @return An mmil_model object that inherits from the \code{\link[glmnet]{glmnet}} class.
 #'
 #' @export
 #'
@@ -468,7 +468,7 @@ emmil_fit_glmnet <-
 #' @examples
 #' NULL
 #'
-emmil_fit_glmnet_experimental <-
+mmil_fit_glmnet <-
   function(
     X,
     z,
@@ -552,7 +552,7 @@ emmil_fit_glmnet_experimental <-
     
     # return result
     result <-
-      new_emmil_model(
+      new_mmil_model(
         model = model,
         rho = rho,
         zeta = zeta,
@@ -568,7 +568,7 @@ emmil_fit_glmnet_experimental <-
 
 
 
-#' Fit an EMMIL model using a generalized linear model.
+#' Fit an MMIL model using a generalized linear model.
 #'
 #' @param X The numeric feature matrix of single-cell data. Each row is a cell, and each
 #' column is a feature.
@@ -608,7 +608,7 @@ emmil_fit_glmnet_experimental <-
 #' @examples
 #' NULL
 #'
-emmil_fit_glm <- function(
+mmil_fit_glm <- function(
     X,
     z,
     rho,
@@ -675,7 +675,7 @@ emmil_fit_glm <- function(
   
   # return result
   result <-
-    new_emmil_model(
+    new_mmil_model(
       model = model,
       rho = rho,
       zeta = zeta,
@@ -689,7 +689,7 @@ emmil_fit_glm <- function(
 }
 
 
-#' Fit an EMMIL model using a multilayer perceptron.
+#' Fit an MMIL model using a multilayer perceptron.
 #'
 #' @param X The numeric feature matrix of single-cell data. Each row is a cell, and each
 #' column is a feature.
@@ -736,7 +736,7 @@ emmil_fit_glm <- function(
 #'
 #' @examples
 #' NULL
-emmil_fit_mlp <-
+mmil_fit_mlp <-
   function(
     X,
     z,
@@ -806,7 +806,7 @@ emmil_fit_mlp <-
     
     # return result
     result <-
-      new_emmil_model(
+      new_mmil_model(
         model = model,
         rho = rho,
         zeta = zeta,
@@ -847,7 +847,7 @@ emmil_fit_mlp <-
 #'
 #' @examples
 #' NULL
-emmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iterations = 20L, model_spec) {
+mmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, num_iterations = 20L, model_spec) {
   # initialize model
   y <- initialize_y(z, rho)
   lls <- rep(0, num_iterations)
@@ -893,7 +893,7 @@ emmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, n
   
   
   result <-
-    new_emmil_model(
+    new_mmil_model(
       model = model,
       rho = rho,
       zeta = zeta,
@@ -907,13 +907,13 @@ emmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, n
 }
 
 
-# adjust predictions using EMMIL's intercept adjustments -----------------------
+# adjust predictions using MMIL's intercept adjustments -----------------------
 
-#' Update the predictions of an EMMIL model using the case-control (i.e. sampling
+#' Update the predictions of an MMIL model using the case-control (i.e. sampling
 #' bias) adjustment
 #'
 #' @param base_predictions Unadjusted predictions (either logit or probability values)
-#' from an EMMIL model.
+#' from an MMIL model.
 #'
 #' @param z A numeric vector of inherited patient labels for each cell. 1 if the
 #' cell was sampled from a patient with the disease and 0 otherwise.
@@ -942,10 +942,10 @@ emmil_fit_tidymodels <- function(X, z, rho, zeta, case_control_adjustment = 0, n
 #' @examples
 #' NULL
 #'
-emmil_adjust_predictions_case_control <-
+mmil_adjust_predictions_case_control <-
   function(base_predictions, z, rho, zeta, prediction_type = c("logit", "prob")) {
     case_control_intercept_adjustment <-
-      emmil_calculate_case_control_adjustment(z = z, rho = rho, zeta = zeta)
+      mmil_calculate_case_control_adjustment(z = z, rho = rho, zeta = zeta)
     
     if (prediction_type == "prob") {
       base_predictions <- logit(base_predictions)
@@ -961,10 +961,10 @@ emmil_adjust_predictions_case_control <-
   }
 
 
-#' Update the predictions of an EMMIL model using the sample-label adjustment
+#' Update the predictions of an MMIL model using the sample-label adjustment
 #'
 #' @param base_predictions Unadjusted predictions (either logit or probability values)
-#' from an EMMIL model.
+#' from an MMIL model.
 #'
 #' @param z A numeric vector of inherited patient labels for each cell. 1 if the
 #' cell was sampled from a patient with the disease and 0 otherwise.
@@ -996,10 +996,10 @@ emmil_adjust_predictions_case_control <-
 #'
 #' @examples
 #' NULL
-emmil_adjust_predictions_sample_label <-
+mmil_adjust_predictions_sample_label <-
   function(base_predictions, z, rho, zeta, adjust_healthy_samples = TRUE, prediction_type = c("logit", "prob")) {
     sample_label_intercept_adjustment <-
-      emmil_calculate_sample_label_adjustment(rho = rho, zeta = zeta)
+      mmil_calculate_sample_label_adjustment(rho = rho, zeta = zeta)
     
     if (prediction_type == "prob") {
       base_predictions <- logit(base_predictions)
@@ -1020,12 +1020,12 @@ emmil_adjust_predictions_sample_label <-
     return(updated_predictions)
   }
 
-#' Update the predictions of an EMMIL model using the case-control (i.e. sampling
+#' Update the predictions of an MMIL model using the case-control (i.e. sampling
 #' bias) adjustment when a model was trained on a distribution with one set of rho
 #' and zeta values, but applied to a distribution with a new set of rho and zeta values.
 #'
 #' @param base_predictions Unadjusted predictions (either logit or probability values)
-#' from an EMMIL model.
+#' from an MMIL model.
 #'
 #' @param training_z A numeric vector of inherited patient labels for each cell
 #' from the dataset on which the model was originally trained. 1 if the
@@ -1069,7 +1069,7 @@ emmil_adjust_predictions_sample_label <-
 #' @examples
 #' NULL
 #'
-emmil_adjust_predictions_case_control_new_rho_and_zeta <-
+mmil_adjust_predictions_case_control_new_rho_and_zeta <-
   function(
     base_predictions,
     training_z,
@@ -1081,7 +1081,7 @@ emmil_adjust_predictions_case_control_new_rho_and_zeta <-
   ) {
     case_control_intercept_adjustment <-
       # original model's case-control adjustment
-      emmil_calculate_case_control_adjustment(
+      mmil_calculate_case_control_adjustment(
         z = training_z,
         rho = training_rho,
         zeta = training_zeta
@@ -1112,11 +1112,11 @@ emmil_adjust_predictions_case_control_new_rho_and_zeta <-
 
 # visualization ----------------------------------------------------------------
 
-#' Plot the log-likelihood values over each iteration of EMMIL.
+#' Plot the log-likelihood values over each iteration of MMIL.
 #'
-#' @param emmil_model_object An EMMIL model fit using the high-level API.
+#' @param mmil_model_object An MMIL model fit using the high-level API.
 #' @param lls A numeric vector of log-likelihood values. Will be ignored if
-#' emmil_model_object is provided.
+#' mmil_model_object is provided.
 #' @param theme A ggplot2 theme. Defaults to ggplot2::theme_bw().
 #' @param ... Optional additional arguments to pass to ggplot2::geom_point().
 #'
@@ -1132,14 +1132,14 @@ emmil_adjust_predictions_case_control_new_rho_and_zeta <-
 #' @examples
 #' NULL
 #'
-emmil_plot_lls <- function(emmil_model_object, lls, theme = ggplot2::theme_bw(), ...) {
+mmil_plot_lls <- function(mmil_model_object, lls, theme = ggplot2::theme_bw(), ...) {
   
-  if (!missing(emmil_model_object)) {
+  if (!missing(mmil_model_object)) {
   lls <-
-    emmil_model_object |>
-    emmil_get_log_likelihoods()
+    mmil_model_object |>
+    mmil_get_log_likelihoods()
   } else if (missing(lls)) {
-    stop("Either emmil_model_object or lls must be provided.")
+    stop("Either mmil_model_object or lls must be provided.")
   }
   
   result <-

@@ -1,5 +1,5 @@
 ---
-title: "Getting started with EMMIL"
+title: "Getting started with MMIL"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{getting-started}
@@ -19,13 +19,7 @@ knitr::opts_chunk$set(
 
 
 ```{r setup}
-# maybe EMMIL stands for 
-# Expectation-
-# Maximization for 
-# Mixture-based 
-# Instance 
-# Labeling
-library(emmil)
+library(mmil)
 library(ggplot2)
 ```
 
@@ -45,11 +39,13 @@ num_iterations <- 100
 
 # Simulate data
 
-First, we simulate data for this vignette. Specifically, we simulate a dataset of 1000 cells, about half of which are from the diseased-condition. Each cell is defined by a feature vector of 10 features. The disease-associated cells are have half of their features shifted from those of non-disease-associated cells by adding a constant value of 4 to each. The data are simulated such that the disease-associated cells are only present in "patients" who have the disease, but non-disease associated cells are present in both healthy and sick "patients".
+First, we simulate data for this vignette. Specifically, we simulate a dataset of 1000 cells, about half of which are from the disease condition. Each cell is defined by a feature vector of 10 features. To give the disease-associated cells a distinct phenotype from the non-disease-associated cells, the disease-associated cells have half of their features shifted from those of non-disease-associated cells (by adding a constant value of 4 to each disease-associated feature).
+
+The data are simulated such that the disease-associated cells are only present in "patients" who have the disease, but non-disease-associated cells are present in both healthy and sick "patients". Thus, our goal is to find which cells in the patients who have the disease are
 
 ```{r}
 simulated_data <- 
-  emmil_simulate_data(
+  mmil_simulate_data(
     num_cells = 1000, 
     num_features = 10, 
     rho = rho, 
@@ -95,7 +91,7 @@ print(scatterplot)
 
 # The low-level API 
 
-This package provides several functions for calculating quantities that are needed to apply the Mixture LASSO/EMMIL/AlgorithmName to your own model, as long as that model's objective is to optimize the binary classification log-likelihood.  Here are some of those functions: 
+This package provides several functions for calculating quantities that are needed to apply MMIL to your own model, as long as that model's objective is to optimize the binary classification log-likelihood.  Here are some of those functions: 
 
 
 ## Calculating the case-control intercept 
@@ -107,7 +103,7 @@ This package provides several functions for calculating quantities that are need
 # This should be pretty close to 0, because we don't have any sampling bias!
 # Including for completeness.
 case_control_intercept_adjustment <- 
-  emmil_calculate_case_control_adjustment(
+  mmil_calculate_case_control_adjustment(
     z = z, 
     rho = rho, 
     zeta = zeta
@@ -118,7 +114,7 @@ print(round(case_control_intercept_adjustment, 4))
 
 ## Calculating the log-likelihood
 
-[A blurb about `emmil_loglik`]
+[A blurb about `mmil_loglik`]
 
 
 ```{r}
@@ -128,13 +124,13 @@ print(round(case_control_intercept_adjustment, 4))
 
 ## Other low-level functions
 
-* `emmil_initialize_y`
-* `emmil_calculate_sample_label_adjustment`
-* `emmil_plot_lls`
+* `mmil_initialize_y`
+* `mmil_calculate_sample_label_adjustment`
+* `mmil_plot_lls`
 
 # The high-level API 
 
-This package also provides a high-level API that can be used to fit `glmnet`, `glm`, or `nnet` models using the Mixture LASSO/EMMIL/AlgorithmName schema. 
+This package also provides a high-level API that can be used to fit `glmnet`, `glm`, or `nnet` models using the Mixture LASSO/MMIL/AlgorithmName schema. 
 
 ## Fit model
 
@@ -145,7 +141,7 @@ We can demonstrate some functions in the high-level API using our simulated data
 ```{r}
 # fit the model
 glmnet_model <- 
-  emmil_fit_glmnet(
+  mmil_fit_glmnet(
     X = X, 
     z = z, 
     rho = rho, 
@@ -165,15 +161,36 @@ glmnet_model <-
   )
 
 # retrieve LL values for all training iterations
-lls <- emmil_get_log_likelihoods(glmnet_model)
+lls <- mmil_get_log_likelihoods(glmnet_model)
 ```
 
+
+```{r}
+# fit the model
+glmnet_model_experimental <- 
+  mmil_fit_glmnet_experimental(
+    X = X, 
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    lambda = lambda, 
+    case_control_adjustment = case_control_intercept_adjustment, # I am 
+    num_iterations = num_iterations, # the max number of iterations for model training
+    early_stopping_patience = 3L, # The number of iterations that can have improvements
+    # in the LL smaller than `early_stopping_tolerance` before training is stopped
+    early_stopping_tolerance = 1e-4 # the smallest improvement for which the 
+    # the model will still be considered "improving" by our patience schema
+  )
+
+# retrieve LL values for all training iterations
+lls_experimental <- mmil_get_log_likelihoods(glmnet_model)
+```
 
 
 ```{r}
 # plot LL progress
 glmnet_model |> 
-  emmil_plot_lls() + 
+  mmil_plot_lls() + 
   labs(
     caption = paste0(
       "Notice that the number of max iterations was ", 
@@ -197,16 +214,16 @@ glmnet_predictions <-
   predict(newx = X, s = lambda, type = "response") |> 
   as.numeric() |> 
   # apply case-control adjustment
-  emmil_adjust_predictions_case_control(
+  mmil_adjust_predictions_case_control(
     z = z, 
     rho = rho, 
     zeta = zeta, 
-    # let EMMIL know that the predictions are probabilities, not logits (
+    # let MMIL know that the predictions are probabilities, not logits (
     # it can accept either when doing the adjustments)
     prediction_type = "prob"
   ) |> 
   # apply sample-label adjustment for cells from sick people
-  emmil_adjust_predictions_sample_label(
+  mmil_adjust_predictions_sample_label(
     z = z, 
     rho = rho, 
     zeta = zeta, 
@@ -241,7 +258,7 @@ What if instead of using a glmnet model, we used a perceptron?
 
 ```{r}
 nnet_model <- 
-  emmil_fit_mlp(
+  mmil_fit_mlp(
     X = X, 
     z = z, 
     rho = rho, 
@@ -254,7 +271,7 @@ nnet_model <-
 
 lls <- 
   nnet_model |> 
-  emmil_get_log_likelihoods()
+  mmil_get_log_likelihoods()
 
 ```
 
@@ -262,7 +279,7 @@ lls <-
 ```{r}
 # plot LL at each iteration 
 nnet_model |> 
-  emmil_plot_lls() + 
+  mmil_plot_lls() + 
   labs(
     caption = paste0(
       "Notice that the number of max iterations was ", 
@@ -278,16 +295,16 @@ nnet_predictions <-
   predict(newdata = as.data.frame(X), adjust = FALSE, type = "raw") |> 
   as.numeric() |> 
   # apply case-control adjustment
-  emmil_adjust_predictions_case_control(
+  mmil_adjust_predictions_case_control(
     z = z, 
     rho = rho, 
     zeta = zeta, 
-    # let EMMIL know that the predictions are probabilities, not logits (
+    # let MMIL know that the predictions are probabilities, not logits (
     # it can accept either when doing the adjustments)
     prediction_type = "prob"
   ) |> 
   # apply sample-label adjustment for cells from sick people
-  emmil_adjust_predictions_sample_label(
+  mmil_adjust_predictions_sample_label(
     z = z, 
     rho = rho, 
     zeta = zeta, 
@@ -323,7 +340,7 @@ What if instead of using either of the two previous models, we used logistic reg
 
 ```{r, warning = FALSE}
 glm_model <- 
-  emmil_fit_glm(
+  mmil_fit_glm(
     X = X, 
     z = z, 
     rho = rho, 
@@ -333,14 +350,14 @@ glm_model <-
 
 lls <- 
   glm_model |> 
-  emmil_get_log_likelihoods()
+  mmil_get_log_likelihoods()
 ```
 
 
 
 ```{r}
 glm_model |> 
-  emmil_plot_lls() + 
+  mmil_plot_lls() + 
   labs(
     caption = paste0(
       "Notice that the number of max iterations was ", 
@@ -355,16 +372,16 @@ glm_predictions <-
   glm_model |> 
   predict(newdata = as.data.frame(X), type = "response") |> 
   # apply case-control adjustment
-  emmil_adjust_predictions_case_control(
+  mmil_adjust_predictions_case_control(
     z = z, 
     rho = rho, 
     zeta = zeta, 
-    # let EMMIL know that the predictions are probabilities, not logits (
+    # let MMIL know that the predictions are probabilities, not logits (
     # it can accept either when doing the adjustments)
     prediction_type = "prob"
   ) |> 
   # apply sample-label adjustment for cells from sick people
-  emmil_adjust_predictions_sample_label(
+  mmil_adjust_predictions_sample_label(
     z = z, 
     rho = rho, 
     zeta = zeta, 
@@ -419,7 +436,7 @@ model_plot <-
   theme_bw() + 
   theme(axis.text.x = element_text(size = 8, angle = 20, hjust = 1)) + 
   labs(
-    y = "EMMIL prediction", 
+    y = "MMIL prediction", 
     fill = "True cell-level label", 
     x = "Sample label"
   )
@@ -432,7 +449,7 @@ print(model_plot)
 The coefficients make sense because we have 10 features, the first 5 of which actually differ between the disease-associated and non-disease-associated cells. 
 
 ```{r}
-coef(glmnet_model, s = emmil_get_hyperparameters(glmnet_model)$lambda) |> 
+coef(glmnet_model, s = mmil_get_hyperparameters(glmnet_model)$lambda) |> 
   as.matrix() |> 
   dplyr::as_tibble(rownames = "feature") |> 
   dplyr::transmute(
@@ -447,5 +464,116 @@ coef(glmnet_model, s = emmil_get_hyperparameters(glmnet_model)$lambda) |>
 
 
 
+# Semi-supervised case 
+
+```{r}
+# single-cell feature matrix
+X |> 
+  dim()
+
+# inherited labels for each cell
+z
+
+# true disease-association class for each cell
+my_true_y <- rep(NA, length(z))
+my_true_y[z == 0] <- 0
+my_true_y[true_y == 1 & is.na(my_true_y)] <- 
+  sample(
+    x = c(NA, 1), 
+    size = length(my_true_y[true_y == 1 & is.na(my_true_y)]), 
+    replace = TRUE, 
+    prob = c(0.75, 0.25)
+  )
+my_true_y
+
+tibble::tibble(
+  z = z, 
+  true_y = true_y, 
+  my_true_y = my_true_y
+) |> 
+  dplyr::count(z, true_y, my_true_y)
+```
+
+
+```{r}
+ss_glmnet_model <- 
+  mmil_fit_glmnet_experimental(
+    X = X, 
+    z = z, 
+    true_y = my_true_y, 
+    rho = rho, 
+    zeta = zeta, 
+    lambda = lambda, 
+    case_control_adjustment = case_control_intercept_adjustment,
+    num_iterations = num_iterations, # the max number of iterations for model training
+    early_stopping_patience = 3L, # The number of iterations that can have improvements
+    # in the LL smaller than `early_stopping_tolerance` before training is stopped
+    early_stopping_tolerance = 1e-4 # the smallest improvement for which the 
+    # the model will still be considered "improving" by our patience schema
+  )
+
+# retrieve LL values for all training iterations
+lls <- mmil_get_log_likelihoods(ss_glmnet_model)
+```
+
+
+```{r}
+ss_glmnet_model |> 
+  mmil_plot_lls()
+```
+
+
+```{r}
+
+# calculate base (unadjusted predictions) using the trained model
+ss_glmnet_predictions_unadjusted <- 
+  ss_glmnet_model |> 
+  # predictions are probabilities between 0 and 1
+  predict(newx = X, s = lambda, type = "response") |> 
+  as.numeric()
+
+# calculate predictions with case-control and sample-label adjustments
+glmnet_predictions <- 
+  ss_glmnet_model |> 
+  predict(newx = X, s = lambda, type = "response") |> 
+  as.numeric() |> 
+  # apply case-control adjustment
+  mmil_adjust_predictions_case_control(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # let MMIL know that the predictions are probabilities, not logits (
+    # it can accept either when doing the adjustments)
+    prediction_type = "prob"
+  ) |> 
+  # apply sample-label adjustment for cells from sick people
+  mmil_adjust_predictions_sample_label(
+    z = z, 
+    rho = rho, 
+    zeta = zeta, 
+    # optional to set the final model's predictions for cells taken from 
+    # healthy patients to a probability of 0 (or logit of -Inf)
+    adjust_healthy_samples = FALSE, 
+    prediction_type = "prob"
+  )
+
+glmnet_performance_tibble <- 
+  tibble::tibble(
+  glmnet_predictions = glmnet_predictions, 
+  truth = dplyr::if_else(true_y == 0, "healthy", "disease"), 
+  z = z, 
+  sample_type = dplyr::if_else(z == 0, "healthy sample", "disease sample")
+)
+
+# plot adjusted probabilities
+glmnet_performance_tibble |> 
+  ggplot(aes(y = glmnet_predictions, x = truth, fill = sample_type)) + 
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  scale_x_discrete(drop = FALSE) + 
+  scale_y_continuous(limits = c(0, 1)) + 
+  scale_color_discrete(drop = FALSE) + 
+  theme_bw() + 
+  labs(subtitle = "glmnet performance", x = "true label", y = "predicted probability")
+```
 
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/helper_functions.R
 \name{update_y}
 \alias{update_y}
-\title{After a maximization step is computed by the EMMIL algorithm, update the
+\title{After a maximization step is computed by the MMIL algorithm, update the
 y-values (disease-association probabilities) for each cell in the next iteration}
 \usage{
 update_y(predictions, z, rho, zeta, true_y = NULL)
@@ -24,6 +24,6 @@ labels for each cell.}
 A numeric vector of updated probabilities that each cell is disease-associated.
 }
 \description{
-After a maximization step is computed by the EMMIL algorithm, update the
+After a maximization step is computed by the MMIL algorithm, update the
 y-values (disease-association probabilities) for each cell in the next iteration
 }

@@ -1,23 +1,26 @@
-# emmil_model.R
+# mmil_model.R
 #
-# Methods for the S3 object "emmil_model"
+# Methods for the S3 object "mmil_model"
 
-#' Construct a MixtureLASSO model. 
+#' Construct an MMIL model. 
 #' 
 #' @param model TO DO 
-#' @param rho TO DO 
-#' @param zeta TO DO 
+#' @param rho A scalar value between 0 and 1 indicating the probability that
+#' that a cell is NOT associated with the outcome-of-interest, given that the
+#' cell was sampled from a patient who DOES have the outcome of interest. In other
+#' words, the expected number of non-disease-associated cells in each sick patient. 
+#' @param zeta The probability that the inherited patient label of any given cell will be 1. 
 #' @param num_cells TO DO 
 #' @param hyperparameters TO DO 
 #' @param num_cells_disease TO DO 
 #' @param lls TO DO 
 #'
-#' @return An "emmil_model", an S3 object subclass of the original model class. 
+#' @return An "mmil_model", an S3 object subclass of the original model class. 
 #' Attributes include rho, zeta, num_cells, num_cells_disease, and hyperparameters. 
 #'
-#' @family emmil_model utilities
+#' @family mmil_model utilities
 #'
-new_emmil_model <- 
+new_mmil_model <- 
   function(
     model, 
     rho, 
@@ -59,13 +62,13 @@ new_emmil_model <-
       type <- "parsnip"
     }
     
-    check_emmil_model_hyperparameters(
+    check_mmil_model_hyperparameters(
       type = type, 
       hyperparameters = hyperparameters
     )
     
     # assemble object if all arguments are okay
-    emmil_model <- 
+    mmil_model <- 
       structure(
         model, 
         rho = rho, 
@@ -74,14 +77,14 @@ new_emmil_model <-
         num_cells_disease = num_cells_disease, 
         lls = lls, 
         hyperparameters = hyperparameters, 
-        class = c("emmil_model", class(model))
+        class = c("mmil_model", class(model))
       )
     
     # return result
-    return(emmil_model)
+    return(mmil_model)
   }
 
-validate_emmil_model <- function() { 
+validate_mmil_model <- function() { 
   NULL
 } 
 
@@ -89,11 +92,14 @@ validate_emmil_model <- function() {
 
 
 
-#' Construct an EMMIL model.
+#' Construct an MMIL model.
 #' 
 #' @param model TO DO 
-#' @param rho TO DO 
-#' @param zeta TO DO 
+#' @param rho A scalar value between 0 and 1 indicating the probability that
+#' that a cell is NOT associated with the outcome-of-interest, given that the
+#' cell was sampled from a patient who DOES have the outcome of interest. In other
+#' words, the expected number of non-disease-associated cells in each sick patient. 
+#' @param zeta The probability that the inherited patient label of any given cell will be 1. 
 #' @param num_cells TO DO 
 #' @param num_cells_disease TO DO 
 #' @param hyperparameters TO DO 
@@ -103,9 +109,9 @@ validate_emmil_model <- function() {
 #' 
 #' @export
 #'
-#' @family emmil_model utilities
+#' @family mmil_model utilities
 #'
-emmil_model <- 
+mmil_model <- 
   function(
     model, 
     rho = 0.5, 
@@ -116,7 +122,7 @@ emmil_model <-
     hyperparameters = list()
   ) {  
     result <- 
-      new_emmil_model(
+      new_mmil_model(
         model = model, 
         rho = rho, 
         zeta = zeta, 
@@ -130,7 +136,7 @@ emmil_model <-
     
   }
 
-check_emmil_model_hyperparameters <- function(type, hyperparameters) { 
+check_mmil_model_hyperparameters <- function(type, hyperparameters) { 
   if (type == "glmnet") { 
     if (!all(names(hyperparameters) %in% c("lambda", "alpha"))) { 
       stop("both lambda and alpha hyperparameters must be specified for a glmnet model")
@@ -156,9 +162,9 @@ check_emmil_model_hyperparameters <- function(type, hyperparameters) {
 
 }
 
-#' Make predictions for new data using an EMMIL model. 
+#' Make predictions for new data using an MMIL model. 
 #'
-#' @param object An emmil_model object.
+#' @param object An mmil_model object.
 #' @param ... Additional parameters to pass to the object subclass. 
 #'
 #' @return Predictions based on the subclass predict method
@@ -168,15 +174,15 @@ check_emmil_model_hyperparameters <- function(type, hyperparameters) {
 #' @examples
 #' NULL
 #' 
-predict.emmil_model <- function(object, ...) { 
+predict.mmil_model <- function(object, ...) { 
   base_predictions <- NextMethod(...)
   return(base_predictions)
 }
 
 
-#' Find an EMMIL model's coefficients 
+#' Find an MMIL model's coefficients 
 #'
-#' @param object An EMMIL model. 
+#' @param object An MMIL model. 
 #' 
 #' @param ... Additional arguments to pass to the subclass-specific `coef` function. 
 #'
@@ -187,15 +193,15 @@ predict.emmil_model <- function(object, ...) {
 #' @examples
 #' NULL
 #' 
-coef.emmil_model <- 
+coef.mmil_model <- 
   function(object, ...) { 
     coefficients <- NextMethod(...)
     return(coefficients)
   }
 
-#' Get the hyperparameters of an EMMIL object
+#' Get the hyperparameters of an MMIL object
 #'
-#' @param emmil_model_object An EMMIL model. 
+#' @param mmil_model_object An MMIL model. 
 #'
 #' @return A list of model type-specific hyperparameters
 #' 
@@ -203,16 +209,16 @@ coef.emmil_model <-
 #'
 #' @examples
 #' NULL
-emmil_get_hyperparameters <- 
-  function(emmil_model_object) { 
-    result <- attr(x = emmil_model_object, which = "hyperparameters")
+mmil_get_hyperparameters <- 
+  function(mmil_model_object) { 
+    result <- attr(x = mmil_model_object, which = "hyperparameters")
     return(result)
   }
 
 
-#' Get the training log-likelihood values of an EMMIL object
+#' Get the training log-likelihood values of an MMIL object
 #'
-#' @param emmil_model_object An EMMIL model. 
+#' @param mmil_model_object An MMIL model. 
 #'
 #' @return A vector of log-likelihood values (one for each iteration)
 #' 
@@ -220,9 +226,9 @@ emmil_get_hyperparameters <-
 #'
 #' @examples
 #' NULL
-emmil_get_log_likelihoods <- 
-  function(emmil_model_object) { 
-    result <- attr(x = emmil_model_object, which = "lls")
+mmil_get_log_likelihoods <- 
+  function(mmil_model_object) { 
+    result <- attr(x = mmil_model_object, which = "lls")
     return(result)
   }
 
