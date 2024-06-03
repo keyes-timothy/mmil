@@ -168,7 +168,7 @@ lls <- mmil_get_log_likelihoods(glmnet_model)
 ```{r}
 # fit the model
 glmnet_model_experimental <- 
-  mmil_fit_glmnet_experimental(
+  mmil_fit_glmnet(
     X = X, 
     z = z, 
     rho = rho, 
@@ -497,7 +497,7 @@ tibble::tibble(
 
 ```{r}
 ss_glmnet_model <- 
-  mmil_fit_glmnet_experimental(
+  mmil_fit_glmnet(
     X = X, 
     z = z, 
     true_y = my_true_y, 

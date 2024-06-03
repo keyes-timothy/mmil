@@ -17,9 +17,12 @@ new_mmil_model(
 \arguments{
 \item{model}{TO DO}
 
-\item{rho}{TO DO}
+\item{rho}{A scalar value between 0 and 1 indicating the probability that
+that a cell is NOT associated with the outcome-of-interest, given that the
+cell was sampled from a patient who DOES have the outcome of interest. In other
+words, the expected number of non-disease-associated cells in each sick patient.}
 
-\item{zeta}{TO DO}
+\item{zeta}{The probability that the inherited patient label of any given cell will be 1.}
 
 \item{num_cells}{TO DO}
 

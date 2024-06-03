@@ -2,11 +2,12 @@
 % Please edit documentation in R/core_functions.R
 \name{mmil_fit_glmnet}
 \alias{mmil_fit_glmnet}
-\title{Fit an MMIL model using glmnet.}
+\title{Fit an MMIL model using glmnet with the option for sick samples to have cell-level labels.}
 \usage{
 mmil_fit_glmnet(
   X,
   z,
+  true_y = NULL,
   rho,
   zeta,
   lambda,
@@ -24,6 +25,11 @@ column is a feature.}
 
 \item{z}{A numeric vector of inherited patient labels for each cell. 1 if the
 cell was sampled from a patient with the disease and 0 otherwise.}
+
+\item{true_y}{A numeric vector of true labels for each cell (if known). Should 
+be 1 if a cell is disease-associated, 0 if the cell is not disease-associated, and 
+NA otherwise. By default, all entries in true_y for cells for which z == 0 will
+be set to 0, and all other values will be NA.}
 
 \item{rho}{A scalar value between 0 and 1 indicating the probability that
 that a cell is NOT associated with the outcome-of-interest, given that the
