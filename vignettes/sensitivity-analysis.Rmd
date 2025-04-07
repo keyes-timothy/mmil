@@ -1,0 +1,158 @@
+---
+title: "Sensitivity analysis"
+output: html_document
+date: "2025-04-04"
+---
+
+```{r, echo = FALSE}
+require(mmil)
+require(glmnet)
+require(ggplot2)
+require(rsample)
+require(data.table)
+require(pROC)
+
+set.seed(2345)
+```
+
+# Background
+
+# How to perform a sensitivity analysis
+
+We start by simulating data, which we can do with the `mmil_simulate_data` function in the **mmil** package.
+
+Here, we simulate 1000 cells with 100 features each, and rho = 0.9. The argument `shift` = 0.4 allows us to control the strength of the signal. In this case, we add 0.4 to the first 50 covariates in disease-associated cells.
+
+```{r}
+p = 100
+n = 1000
+zeta = 0.5 # (default in mmil_simulate_data)
+shift = 1
+data = mmil_simulate_data(num_cells = n, 
+                          rho = 0.9,
+                          num_features = p,
+                          shift = shift)
+
+data.test = mmil_simulate_data(num_cells = n, 
+                          rho = 0.9,
+                          num_features = p,
+                          shift = shift)
+```
+
+Here, we'll try a wide range of values: $\rho = 0.10, 0.25, 0.50, 0.75, 0.90$. In real settings, we should consider values in a neighborhood that we think is reasonable, given what we know about our problem.
+
+```{r}
+rhos = c(.1, .25, .5, .75, .9)
+```
+
+We also need to choose a set of $\lambda$ values to consider.
+```{r}
+lambda_path = c(1e-3, 5e-4)
+```
+
+We set our case control adjustment to 0, because we know that our train and test distributions are the same.
+
+```{r}
+case.control.adj <- 0
+```
+
+Now, we have two parameters to choose: (1) the $\lambda$ parameter (for lasso) and (2) the $\rho$ parameter (for MMIL). We will choose these parameters using cross validation: for each ($\lambda$, $\rho$), we will compute and store the CV log likelihood. Then, for each $\rho$, choose lambda that optimizes the CV log likelihood. We will fit a model for each of these ($\rho$, $\lambda$) pairs and compare their CV log likelihoods.
+
+First, we make our CV folds:
+
+```{r}
+# CV to choose lambda (glmnet parameter)
+n.folds = 3
+cv_folds <- vfold_cv(
+    data.frame(X = data$X,
+               z = data$z),
+    v = n.folds)
+```
+**Note**: We simulated our data so that all cells are independent, but in real-world settings, remember to ensure that cross-validation folds respect person-level grouping—that is, all cells from a given individual should be assigned to the same fold. This can be done with the function `group_vfold_cv`.
+
+
+And now we model:
+```{r}
+results = rep(NULL, 3)
+for(lambda in lambda_path){
+    for(rho_guess in rhos){
+      print(c(rho_guess, lambda))
+    
+      mean.ll = 0
+      for (i in 1:n.folds) {
+        train_data <- analysis(cv_folds$splits[[i]])  
+        test_data  <- assessment(cv_folds$splits[[i]])
+
+        mixture.model <- mmil_fit_glmnet(as.matrix(train_data[, 1:p]),
+                                         train_data[, "z"],
+                                         rho = .9,
+                                         zeta = zeta,
+                                         lambda = lambda,
+                                         case_control_adjustment = case.control.adj,
+                                         num_iterations = 50,
+                                         early_stopping_patience = 3,
+                                         fit_entire_glmnet_path = FALSE)
+
+        
+        preds <- predict(mixture.model, as.matrix(test_data[, 1:p]), s=lambda)
+        ll <- mmil_loglik(test_data[, "z"], preds,
+                          rho = rho_guess,
+                          num_cells_disease = sum(train_data[, "z"]),
+                          num_cells = nrow(train_data)
+                          )
+        mean.ll = mean.ll + ll/n.folds
+      }
+      results = rbind(results, c(rho_guess, lambda, mean.ll))
+    }
+}
+colnames(results) = c("rho", "lambda", "ll")
+results <- data.table(results[2:nrow(results), ])
+```
+
+Here is our performance:
+```{r}
+best_lambdas <- results[, .(ll = max(ll), lambda), by = rho]
+
+ggplot(best_lambdas) + 
+  geom_point(aes(x=rho, y=ll)) + 
+  geom_line(aes(x=rho, y=ll)) +
+  labs(x = expression(rho), y = "Observed log likelihood",
+       title = "Observed cross-validation log likelihood",
+       subtitle = expression("for different values of "*rho))
+```
+
+```{r}
+cat("Best rho:", results[which.max(ll), rho])
+```
+
+This analysis tells us that we should select $\rho = 0.75$ -- the value that gives us the largest log likelihood. This is pretty close to the *true* $\rho$ that we used to simulate data. We now fit our final model using the full dataset:
+```{r}
+# Fit the final model:
+rho = results[which.max(ll), rho]
+lambda = results[which.max(ll), lambda]
+mixture.model    <- mmil_fit_glmnet(data$X, 
+                                        data$z,
+                                        rho = rho,
+                                        zeta = zeta, 
+                                        lambda = lambda,
+                                        case_control_adjustment = case.control.adj,
+                                        num_iterations = 100,
+                                        early_stopping_patience = 3)
+```
+ 
+
+We can predict for our test data:
+```{r}
+preds <- as.vector(predict(mixture.model, newx = data.test$X, s=lambda, type = "response"))
+head(preds)
+```
+
+And compute the AUROC -- though typically, the AUROC is unknowable (because the $y$ labels are unknown): 
+```{r}
+roc_obj <- roc(data.test$true_y, preds, 
+               direction = "<",
+               levels = c(0, 1))  
+auc(roc_obj)
+```
+
+
