@@ -7,7 +7,7 @@ Here, we show how to use MMIL, an expectation maximization method to train and c
 ## How to install
 The `devtools` package offers a function to install R packages hosted on Github.
 
-```install_github("keyes-timothy/emmil")```
+```install_github("keyes-timothy/mmil")```
 
 There are other methods to install R packages from Github, [here](https://cran.r-project.org/web/packages/githubinstall/vignettes/githubinstall.html) is a useful link on this topic.
 
